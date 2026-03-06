@@ -1,5 +1,6 @@
+import { serve } from "bun";
 import { test, expect, describe, beforeAll, afterAll } from "bun:test";
-import { createApp } from "../app.ts";
+import { createAppConfig } from "../app.ts";
 import { createGitService, type CommandRunner } from "../git.ts";
 import { createCmuxService, createDryRunConnector } from "../cmux.ts";
 import { createGitHubService } from "../github.ts";
@@ -55,7 +56,8 @@ function createFakeRunner(): { runner: CommandRunner; calls: string[][] } {
   return { runner, calls };
 }
 
-let app: ReturnType<typeof createApp>;
+let server_: ReturnType<typeof serve>;
+let app: ReturnType<typeof createAppConfig>;
 let sentTexts: string[];
 
 beforeAll(() => {
@@ -72,17 +74,29 @@ beforeAll(() => {
   };
   const github = createGitHubService(runner, "/tmp/test");
 
-  app = createApp({
+  app = createAppConfig({
     port: PORT,
     git,
     cmux,
     github,
     cwd: "/tmp/test",
   });
+
+  server_ = serve({
+    port: PORT,
+    hostname: "127.0.0.1",
+    routes: app.apiRoutes,
+    websocket: app.websocket,
+    fetch: app.fetch,
+    development: false,
+  });
+
+  app.setServer(server_);
 });
 
 afterAll(() => {
   app.stop();
+  server_.stop(true);
 });
 
 describe("API integration", () => {

@@ -2,8 +2,9 @@
  * Test server for E2E tests.
  * Uses fake git/cmux/github services with static data.
  */
+import { serve } from "bun";
 import index from "../src/index.html";
-import { createApp } from "../server/app.ts";
+import { createAppConfig } from "../server/app.ts";
 import { createGitService, type CommandRunner } from "../server/git.ts";
 import { createCmuxService, createDryRunConnector } from "../server/cmux.ts";
 import { createGitHubService } from "../server/github.ts";
@@ -51,13 +52,26 @@ const git = createGitService(runner, "/tmp/test");
 const cmux = createCmuxService(createDryRunConnector());
 const github = createGitHubService(runner, "/tmp/test");
 
-createApp({
+const app = createAppConfig({
   port: PORT,
   git,
   cmux,
   github,
   cwd: "/tmp/test",
-  htmlEntry: index,
 });
+
+const server = serve({
+  port: PORT,
+  hostname: "127.0.0.1",
+  routes: {
+    ...app.apiRoutes,
+    "/": index,
+  },
+  websocket: app.websocket,
+  fetch: app.fetch,
+  development: false,
+});
+
+app.setServer(server);
 
 console.log(`E2E test server running at http://127.0.0.1:${PORT}`);

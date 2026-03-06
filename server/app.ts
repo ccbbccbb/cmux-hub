@@ -1,4 +1,4 @@
-import { serve, type ServerWebSocket, type Server } from "bun";
+import type { ServerWebSocket } from "bun";
 import type { GitService } from "./git.ts";
 import type { CmuxService } from "./cmux.ts";
 import type { GitHubService } from "./github.ts";
@@ -11,7 +11,6 @@ import {
 
 type AppDeps = {
   port: number;
-  hostname?: string;
   git: GitService;
   cmux: CmuxService;
   github: GitHubService;
@@ -21,12 +20,15 @@ type AppDeps = {
     onChanged(cb: () => void): void;
     stop(): void;
   };
-  htmlEntry?: unknown;
 };
 
-export function createApp(deps: AppDeps) {
+/**
+ * Build route handlers, WebSocket config, and fetch handler.
+ * The caller is responsible for calling `serve()` with the returned config
+ * so that Bun's HTML bundler resolves asset paths correctly.
+ */
+export function createAppConfig(deps: AppDeps) {
   const { port, git, cmux, github, cwd } = deps;
-  const hostname = deps.hostname ?? "127.0.0.1";
   const securityConfig = { port };
 
   const wsClients = new Set<ServerWebSocket<unknown>>();
@@ -70,10 +72,7 @@ export function createApp(deps: AppDeps) {
     return jsonResponse({ error: message }, status);
   }
 
-  // eslint-disable-next-line prefer-const
-  let serverRef: Server<unknown>;
-
-  const routes: Record<string, unknown> & { "/"?: unknown } = {
+  const apiRoutes: Record<string, unknown> = {
     "/api/diff": {
       async GET(req: Request) {
         const secErr = validateRequest(req, securityConfig);
@@ -283,25 +282,25 @@ export function createApp(deps: AppDeps) {
     },
   };
 
-  if (deps.htmlEntry) {
-    routes["/"] = deps.htmlEntry;
-  }
+  // upgradeServer must be set by the caller after serve() returns
+  let upgradeServer: { upgrade(req: Request, opts: { data: unknown }): boolean } | null = null;
 
-  serverRef = serve({
-    port,
-    hostname,
-    // @ts-expect-error -- routes built dynamically from deps
-    routes,
+  return {
+    apiRoutes,
+
+    setServer(server: { upgrade(req: Request, opts: { data: unknown }): boolean }) {
+      upgradeServer = server;
+    },
 
     websocket: {
-      open(ws) {
+      open(ws: ServerWebSocket<unknown>) {
         wsClients.add(ws);
         startPolling();
       },
-      message(_ws, _message) {
+      message(_ws: ServerWebSocket<unknown>, _message: string | Buffer) {
         // No client→server messages expected yet
       },
-      close(ws) {
+      close(ws: ServerWebSocket<unknown>) {
         wsClients.delete(ws);
         if (wsClients.size === 0 && pollTimer) {
           clearInterval(pollTimer);
@@ -310,7 +309,7 @@ export function createApp(deps: AppDeps) {
       },
     },
 
-    fetch(req) {
+    fetch(req: Request) {
       const url = new URL(req.url);
 
       // Handle CORS preflight
@@ -326,44 +325,40 @@ export function createApp(deps: AppDeps) {
         if (!isValidWebSocketOrigin(req, securityConfig)) {
           return new Response("Forbidden: invalid origin", { status: 403 });
         }
-        const upgraded = serverRef.upgrade(req, { data: {} });
-        if (!upgraded) {
-          return new Response("WebSocket upgrade failed", { status: 400 });
+        if (upgradeServer) {
+          const upgraded = upgradeServer.upgrade(req, { data: {} });
+          if (!upgraded) {
+            return new Response("WebSocket upgrade failed", { status: 400 });
+          }
         }
         return undefined;
       }
 
-      // Let Bun handle bundled assets (JS/CSS from HTML entry)
-      // Return 404 only for known non-asset paths to suppress console errors
+      // Let Bun handle bundled assets
       if (url.pathname === "/favicon.ico") {
         return new Response(null, { status: 204 });
       }
       return undefined;
     },
 
-    development: false,
-  });
-
-  // Start watcher if provided
-  if (deps.watcher) {
-    deps.watcher.start();
-    deps.watcher.onChanged(() => {
-      const message = JSON.stringify({ type: "diff-updated" });
-      for (const ws of wsClients) {
-        ws.send(message);
+    startWatcher() {
+      if (deps.watcher) {
+        deps.watcher.start();
+        deps.watcher.onChanged(() => {
+          const message = JSON.stringify({ type: "diff-updated" });
+          for (const ws of wsClients) {
+            ws.send(message);
+          }
+        });
       }
-    });
-  }
+    },
 
-  return {
-    server: serverRef,
     stop() {
       if (pollTimer) {
         clearInterval(pollTimer);
         pollTimer = null;
       }
       deps.watcher?.stop();
-      serverRef.stop(true);
     },
   };
 }
