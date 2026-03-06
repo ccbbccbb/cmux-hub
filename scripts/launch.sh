@@ -29,8 +29,11 @@ trap kill_server EXIT INT TERM
 # Notify via cmux
 "$CMUX" notify --title "cmux-hub" --body "Loading diff: $TARGET_DIR" 2>/dev/null
 
+# Capture the terminal surface ID so the server can send text back to it
+TERMINAL_SURFACE="${CMUX_SURFACE_ID:-}"
+
 # Start server
-CMUX_HUB_CWD="$TARGET_DIR" PORT="$PORT" bun run "$PROJECT_DIR/src/index.ts" &
+CMUX_HUB_CWD="$TARGET_DIR" CMUX_HUB_TERMINAL_SURFACE="$TERMINAL_SURFACE" PORT="$PORT" bun run "$PROJECT_DIR/src/index.ts" &
 SERVER_PID=$!
 
 # Wait for server

@@ -31,10 +31,10 @@ export function DiffLine({ line, filePath, onComment }: Props) {
   return (
     <>
       <tr className={`${LINE_COLORS[line.type]} group font-mono text-sm leading-6`}>
-        <td className={`${GUTTER_COLORS[line.type]} w-12 text-right px-2 select-none align-top`}>
+        <td className={`${GUTTER_COLORS[line.type]} w-8 text-right px-1 select-none align-top text-xs`}>
           {line.oldLineNumber ?? ""}
         </td>
-        <td className={`${GUTTER_COLORS[line.type]} w-12 text-right px-2 select-none align-top`}>
+        <td className={`${GUTTER_COLORS[line.type]} w-8 text-right px-1 select-none align-top text-xs`}>
           {line.newLineNumber ?? ""}
         </td>
         <td className="w-6 text-center select-none align-top">

@@ -9,6 +9,7 @@ import { createAppConfig } from "../server/app.ts";
 const PORT = parseInt(process.env.PORT ?? "4567", 10);
 const CWD = process.env.CMUX_HUB_CWD ?? process.cwd();
 const DRY_RUN = process.env.CMUX_HUB_DRY_RUN === "true";
+const TERMINAL_SURFACE = process.env.CMUX_HUB_TERMINAL_SURFACE ?? undefined;
 
 const git = createGitService(defaultCommandRunner, CWD);
 const connector = DRY_RUN ? createDryRunConnector() : createSocketConnector();
@@ -23,6 +24,9 @@ const app = createAppConfig({
   github,
   cwd: CWD,
   watcher,
+  development: process.env.NODE_ENV !== "production",
+  defaultSurfaceId: TERMINAL_SURFACE,
+  autoShutdownMs: DRY_RUN ? undefined : 3000,
 });
 
 const server = serve({

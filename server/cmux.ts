@@ -136,7 +136,7 @@ export function createCmuxService(connector: SocketConnector, socketPath = DEFAU
      * Format a review comment and send it to the terminal
      */
     async sendComment(file: string, line: number, comment: string, surfaceId?: string): Promise<void> {
-      const text = `${file}:${line}\n${comment}`;
+      const text = `${file}:${line}\n${comment}\n`;
       await this.sendText(text, surfaceId);
     },
 

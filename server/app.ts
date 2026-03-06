@@ -15,6 +15,11 @@ type AppDeps = {
   cmux: CmuxService;
   github: GitHubService;
   cwd: string;
+  defaultSurfaceId?: string;
+  /** When true, return undefined from fetch for unmatched routes (needed for Bun dev server asset serving) */
+  development?: boolean;
+  /** Shutdown the process when all WebSocket clients disconnect */
+  autoShutdownMs?: number;
   watcher?: {
     start(): void;
     onChanged(cb: () => void): void;
@@ -28,10 +33,16 @@ type AppDeps = {
  * so that Bun's HTML bundler resolves asset paths correctly.
  */
 export function createAppConfig(deps: AppDeps) {
-  const { port, git, cmux, github, cwd } = deps;
+  const { port, git, cmux, github, cwd, defaultSurfaceId } = deps;
   const securityConfig = { port };
 
+  function resolveSurfaceId(surfaceId?: string): string | undefined {
+    return surfaceId ?? defaultSurfaceId;
+  }
+
   const wsClients = new Set<ServerWebSocket<unknown>>();
+  let hasHadClients = false;
+  let shutdownTimer: ReturnType<typeof setTimeout> | null = null;
 
   let pollTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -140,7 +151,7 @@ export function createAppConfig(deps: AppDeps) {
         try {
           const status = await git.getStatus();
           const branch = await git.getCurrentBranch();
-          return jsonResponse({ status, branch, cwd });
+          return jsonResponse({ status, branch, cwd, terminalSurface: defaultSurfaceId ?? null });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
         }
@@ -153,7 +164,7 @@ export function createAppConfig(deps: AppDeps) {
         if (secErr) return secErr;
         try {
           const body = await req.json() as { text: string; surfaceId?: string };
-          await cmux.sendText(body.text, body.surfaceId);
+          await cmux.sendText(body.text, resolveSurfaceId(body.surfaceId));
           return jsonResponse({ ok: true });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
@@ -172,7 +183,7 @@ export function createAppConfig(deps: AppDeps) {
             comment: string;
             surfaceId?: string;
           };
-          await cmux.sendComment(body.file, body.line, body.comment, body.surfaceId);
+          await cmux.sendComment(body.file, body.line, body.comment, resolveSurfaceId(body.surfaceId));
           return jsonResponse({ ok: true });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
@@ -186,7 +197,7 @@ export function createAppConfig(deps: AppDeps) {
         if (secErr) return secErr;
         try {
           const body = await req.json() as { command: string; surfaceId?: string };
-          await cmux.sendCommand(body.command, body.surfaceId);
+          await cmux.sendCommand(body.command, resolveSurfaceId(body.surfaceId));
           return jsonResponse({ ok: true });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
@@ -201,7 +212,7 @@ export function createAppConfig(deps: AppDeps) {
         try {
           const body = await req.json() as { message: string; surfaceId?: string };
           const command = github.buildCommitCommand(body.message);
-          await cmux.sendCommand(command, body.surfaceId);
+          await cmux.sendCommand(command, resolveSurfaceId(body.surfaceId));
           return jsonResponse({ ok: true, command });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
@@ -216,7 +227,7 @@ export function createAppConfig(deps: AppDeps) {
         try {
           const body = await req.json() as { title: string; body?: string; surfaceId?: string };
           const command = github.buildCreatePRCommand(body.title, body.body);
-          await cmux.sendCommand(command, body.surfaceId);
+          await cmux.sendCommand(command, resolveSurfaceId(body.surfaceId));
           return jsonResponse({ ok: true, command });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
@@ -273,7 +284,7 @@ export function createAppConfig(deps: AppDeps) {
           const body = await req.json() as { prompt?: string; surfaceId?: string };
           const prompt = body.prompt ?? "このPRの変更をレビューしてください";
           const command = `claude "${prompt}"`;
-          await cmux.sendCommand(command, body.surfaceId);
+          await cmux.sendCommand(command, resolveSurfaceId(body.surfaceId));
           return jsonResponse({ ok: true, command });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
@@ -295,6 +306,11 @@ export function createAppConfig(deps: AppDeps) {
     websocket: {
       open(ws: ServerWebSocket<unknown>) {
         wsClients.add(ws);
+        hasHadClients = true;
+        if (shutdownTimer) {
+          clearTimeout(shutdownTimer);
+          shutdownTimer = null;
+        }
         startPolling();
       },
       message(_ws: ServerWebSocket<unknown>, _message: string | Buffer) {
@@ -302,9 +318,18 @@ export function createAppConfig(deps: AppDeps) {
       },
       close(ws: ServerWebSocket<unknown>) {
         wsClients.delete(ws);
-        if (wsClients.size === 0 && pollTimer) {
-          clearInterval(pollTimer);
-          pollTimer = null;
+        if (wsClients.size === 0) {
+          if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+          }
+          // Auto-shutdown when all clients disconnect
+          if (hasHadClients && deps.autoShutdownMs !== undefined) {
+            shutdownTimer = setTimeout(() => {
+              console.log("All clients disconnected, shutting down.");
+              process.exit(0);
+            }, deps.autoShutdownMs);
+          }
         }
       },
     },
@@ -334,11 +359,14 @@ export function createAppConfig(deps: AppDeps) {
         return undefined;
       }
 
-      // Let Bun handle bundled assets
       if (url.pathname === "/favicon.ico") {
         return new Response(null, { status: 204 });
       }
-      return undefined;
+
+      // In dev mode, return undefined so Bun's dev server can serve compiled assets.
+      // In production/compiled mode, assets are embedded in routes, so return 404.
+      if (deps.development) return undefined;
+      return new Response("Not Found", { status: 404 });
     },
 
     startWatcher() {

@@ -58,10 +58,12 @@ export default function App() {
           <div className="flex-1 min-w-0">
             <DiffView diff={diff} loading={loading} error={error} onRefresh={refresh} />
           </div>
-          <div className="w-72 flex-shrink-0 space-y-4">
-            <CIStatus checks={checks} />
-            <PRComments comments={prComments} />
-          </div>
+          {(checks.length > 0 || prComments.length > 0) && (
+            <div className="w-72 flex-shrink-0 space-y-4">
+              <CIStatus checks={checks} />
+              <PRComments comments={prComments} />
+            </div>
+          )}
         </div>
       </div>
     </div>
