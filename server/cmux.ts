@@ -20,6 +20,20 @@ export function createSocketConnector(): SocketConnector {
   };
 }
 
+/**
+ * Dry-run connector that logs messages instead of sending to cmux socket.
+ * Use for local development without cmux.
+ */
+export function createDryRunConnector(): SocketConnector {
+  return async (_path: string) => ({
+    async send(method, params = {}) {
+      console.log(`[cmux dry-run] ${method}`, JSON.stringify(params));
+      return { ok: true };
+    },
+    close() {},
+  });
+}
+
 function createConnection(socket: Socket): CmuxConnection {
   let requestId = 0;
   const pending = new Map<string, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();

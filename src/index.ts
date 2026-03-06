@@ -1,7 +1,7 @@
 import { serve, type ServerWebSocket } from "bun";
 import index from "./index.html";
 import { createGitService, defaultCommandRunner } from "../server/git.ts";
-import { createCmuxService, createSocketConnector } from "../server/cmux.ts";
+import { createCmuxService, createSocketConnector, createDryRunConnector } from "../server/cmux.ts";
 import { createGitHubService } from "../server/github.ts";
 import { createFileWatcher, defaultWatcherFactory } from "../server/watcher.ts";
 import {
@@ -13,9 +13,11 @@ import {
 
 const PORT = parseInt(process.env.PORT ?? "4567", 10);
 const CWD = process.env.CMUX_HUB_CWD ?? process.cwd();
+const DRY_RUN = process.env.CMUX_HUB_DRY_RUN === "true";
 
 const git = createGitService(defaultCommandRunner, CWD);
-const cmux = createCmuxService(createSocketConnector());
+const connector = DRY_RUN ? createDryRunConnector() : createSocketConnector();
+const cmux = createCmuxService(connector);
 const github = createGitHubService(defaultCommandRunner, CWD);
 const watcher = createFileWatcher(defaultWatcherFactory, CWD);
 
@@ -73,11 +75,15 @@ function errorResponse(message: string, status = 500): Response {
   return jsonResponse({ error: message }, status);
 }
 
-serve({
+// eslint-disable-next-line prefer-const
+let serverRef: { upgrade(req: Request): boolean };
+
+serverRef = serve({
   port: PORT,
   hostname: "127.0.0.1",
 
   routes: {
+
     "/api/diff": {
       async GET(req) {
         const secErr = validateRequest(req, securityConfig);
@@ -286,8 +292,8 @@ serve({
       },
     },
 
-    // Serve frontend for all other routes
-    "/*": index,
+    // Serve frontend (SPA entry point)
+    "/": index,
   },
 
   websocket: {
@@ -307,7 +313,7 @@ serve({
     },
   },
 
-  fetch(req, server) {
+  fetch(req) {
     const url = new URL(req.url);
 
     // Handle CORS preflight
@@ -323,14 +329,13 @@ serve({
       if (!isValidWebSocketOrigin(req, securityConfig)) {
         return new Response("Forbidden: invalid origin", { status: 403 });
       }
-      const upgraded = server.upgrade(req);
+      const upgraded = serverRef.upgrade(req);
       if (!upgraded) {
         return new Response("WebSocket upgrade failed", { status: 400 });
       }
       return undefined;
     }
 
-    // Routes are handled by the routes config above
     return undefined;
   },
 

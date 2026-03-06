@@ -27,7 +27,8 @@ export type DiffFile = {
 
 export type ParsedDiff = DiffFile[];
 
-const DIFF_HEADER_RE = /^diff --git a\/(.+) b\/(.+)$/;
+// Supports a/, b/ (default) and c/, w/, i/ (diff.mnemonicPrefix)
+const DIFF_HEADER_RE = /^diff --git [a-z]\/(.+) [a-z]\/(.+)$/;
 const HUNK_HEADER_RE = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)$/;
 
 export function parseDiff(raw: string): ParsedDiff {

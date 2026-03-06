@@ -33,6 +33,18 @@ index abc1234..0000000
 -export function old() {
 -}`;
 
+const MNEMONIC_PREFIX_DIFF = `diff --git c/package.json w/package.json
+index 9b5f005..2d79530 100644
+--- c/package.json
++++ w/package.json
+@@ -4,7 +4,7 @@
+   "private": true,
+   "type": "module",
+   "scripts": {
+-    "dev": "bun --hot src/index.ts",
++    "dev": "CMUX_HUB_DRY_RUN=true bun --hot src/index.ts",
+     "start": "NODE_ENV=production bun src/index.ts",`;
+
 const MULTI_FILE_DIFF = `${SAMPLE_DIFF}
 
 ${NEW_FILE_DIFF}`;
@@ -107,6 +119,16 @@ describe("parseDiff", () => {
     expect(result).toHaveLength(2);
     expect(result[0]?.newPath).toBe("src/index.ts");
     expect(result[1]?.newPath).toBe("src/new.ts");
+  });
+
+  test("parses mnemonic prefix (c/w/) diff", () => {
+    const result = parseDiff(MNEMONIC_PREFIX_DIFF);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.newPath).toBe("package.json");
+    expect(result[0]?.hunks).toHaveLength(1);
+    const addLines = result[0]?.hunks[0]?.lines.filter((l) => l.type === "add") ?? [];
+    expect(addLines.length).toBe(1);
+    expect(addLines[0]?.content).toContain("CMUX_HUB_DRY_RUN");
   });
 
   test("handles empty diff", () => {
