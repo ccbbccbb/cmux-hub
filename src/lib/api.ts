@@ -21,11 +21,11 @@ export const api = {
     if (base) params.set("base", base);
     if (target) params.set("target", target);
     const qs = params.toString();
-    return fetchJSON<{ diff: string }>(`/api/diff${qs ? `?${qs}` : ""}`);
+    return fetchJSON<{ diff: string; files?: import("./diff-parser.ts").ParsedDiff }>(`/api/diff${qs ? `?${qs}` : ""}`);
   },
 
   getAutoDiff() {
-    return fetchJSON<{ diff: string; base: string; includeUntracked: boolean }>("/api/diff/auto");
+    return fetchJSON<{ diff: string; files?: import("./diff-parser.ts").ParsedDiff; base: string; includeUntracked: boolean }>("/api/diff/auto");
   },
 
   getDiffFiles(base?: string, target?: string) {
@@ -36,12 +36,17 @@ export const api = {
     return fetchJSON<{ files: string[] }>(`/api/diff/files${qs ? `?${qs}` : ""}`);
   },
 
+  getFileLines(path: string, start: number, end: number) {
+    const params = new URLSearchParams({ path, start: String(start), end: String(end) });
+    return fetchJSON<{ lines: string[] }>(`/api/file-lines?${params}`);
+  },
+
   getBranches() {
     return fetchJSON<{ branches: string[]; current: string }>("/api/branches");
   },
 
   getStatus() {
-    return fetchJSON<{ status: string; branch: string; cwd: string }>("/api/status");
+    return fetchJSON<{ status: string; branch: string; cwd: string; terminalSurface: string | null }>("/api/status");
   },
 
   sendToTerminal(text: string, surfaceId?: string) {
@@ -51,10 +56,10 @@ export const api = {
     });
   },
 
-  sendComment(file: string, line: number, comment: string, surfaceId?: string) {
+  sendComment(file: string, startLine: number, endLine: number, comment: string, surfaceId?: string) {
     return fetchJSON<{ ok: boolean }>("/api/comment", {
       method: "POST",
-      body: JSON.stringify({ file, line, comment, surfaceId }),
+      body: JSON.stringify({ file, startLine, endLine, comment, surfaceId }),
     });
   },
 

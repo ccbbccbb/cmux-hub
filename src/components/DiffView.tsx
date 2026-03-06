@@ -8,12 +8,13 @@ type Props = {
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
+  hasTerminal?: boolean;
 };
 
-export function DiffView({ diff, loading, error, onRefresh }: Props) {
-  const handleComment = useCallback(async (file: string, line: number, comment: string) => {
+export function DiffView({ diff, loading, error, onRefresh, hasTerminal = false }: Props) {
+  const handleComment = useCallback(async (file: string, startLine: number, endLine: number, comment: string) => {
     try {
-      await api.sendComment(file, line, comment);
+      await api.sendComment(file, startLine, endLine, comment);
     } catch (e) {
       console.error("Failed to send comment:", e);
     }
@@ -52,7 +53,7 @@ export function DiffView({ diff, loading, error, onRefresh }: Props) {
   return (
     <div data-testid="diff-view" className="space-y-2">
       {diff.map((file, idx) => (
-        <DiffFile key={`${file.newPath}-${idx}`} file={file} onComment={handleComment} />
+        <DiffFile key={`${file.newPath}-${idx}`} file={file} onComment={hasTerminal ? handleComment : undefined} />
       ))}
     </div>
   );

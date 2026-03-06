@@ -51,9 +51,9 @@ describe("createCmuxService", () => {
   test("sendComment formats and sends", async () => {
     const { connector, sent } = createFakeConnector();
     const cmux = createCmuxService(connector, "/tmp/test.sock");
-    await cmux.sendComment("src/index.ts", 42, "Fix this bug");
+    await cmux.sendComment("src/index.ts", 42, 42, "Fix this bug");
     expect(sent[0]?.method).toBe("surface.send_text");
-    expect(sent[0]?.params.text).toBe("src/index.ts:42\nFix this bug");
+    expect(sent[0]?.params.text).toBe("src/index.ts:42\nFix this bug\n");
   });
 
   test("sendCommand appends newline", async () => {

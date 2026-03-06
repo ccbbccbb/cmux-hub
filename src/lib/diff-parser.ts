@@ -1,8 +1,14 @@
 export type DiffLineType = "add" | "delete" | "context" | "header";
 
+export type DiffToken = {
+  content: string;
+  color?: string;
+};
+
 export type DiffLine = {
   type: DiffLineType;
   content: string;
+  tokens?: DiffToken[];
   oldLineNumber: number | null;
   newLineNumber: number | null;
 };

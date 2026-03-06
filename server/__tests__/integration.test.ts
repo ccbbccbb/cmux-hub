@@ -185,7 +185,7 @@ describe("API integration", () => {
     const res = await fetch(`${BASE_URL}/api/comment`, {
       method: "POST",
       headers: validHeaders({ "content-type": "application/json" }),
-      body: JSON.stringify({ file: "src/index.ts", line: 42, comment: "fix this" }),
+      body: JSON.stringify({ file: "src/index.ts", startLine: 42, endLine: 42, comment: "fix this" }),
     });
     expect(res.status).toBe(200);
     expect(sentTexts[0]).toContain("src/index.ts:42");

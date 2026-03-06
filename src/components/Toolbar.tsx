@@ -6,9 +6,10 @@ import { api } from "../lib/api.ts";
 type Props = {
   branch: string;
   onRefresh: () => void;
+  hasTerminal: boolean;
 };
 
-export function Toolbar({ branch, onRefresh }: Props) {
+export function Toolbar({ branch, onRefresh, hasTerminal }: Props) {
   const [commitMsg, setCommitMsg] = useState("");
   const [prTitle, setPrTitle] = useState("");
   const [showCommit, setShowCommit] = useState(false);
@@ -55,30 +56,34 @@ export function Toolbar({ branch, onRefresh }: Props) {
   };
 
   return (
-    <div data-testid="toolbar" className="border-b border-gray-700 bg-gray-900 px-4 py-2">
+    <div data-testid="toolbar" className="border-b border-[#30363d] bg-[#161b22] px-4 py-2">
       <div className="flex items-center gap-3">
-        <span className="text-gray-400 text-sm font-mono">{branch}</span>
+        <span className="text-[#58a6ff] text-sm font-mono">{branch}</span>
         <div className="flex-1" />
         <Button variant="ghost" size="sm" onClick={onRefresh}>
           Refresh
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => { setShowCommit(!showCommit); setShowPR(false); }}
-        >
-          Commit
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => { setShowPR(!showPR); setShowCommit(false); }}
-        >
-          Create PR
-        </Button>
-        <Button variant="ghost" size="sm" onClick={handleReview} disabled={sending}>
-          AI Review
-        </Button>
+        {hasTerminal && (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setShowCommit(!showCommit); setShowPR(false); }}
+            >
+              Commit
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setShowPR(!showPR); setShowCommit(false); }}
+            >
+              Create PR
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleReview} disabled={sending}>
+              AI Review
+            </Button>
+          </>
+        )}
       </div>
 
       {showCommit && (

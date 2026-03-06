@@ -116,6 +116,17 @@ export function createGitService(run: CommandRunner, cwd: string) {
       return raw.trim().split("\n").filter(Boolean);
     },
 
+    async getFileLines(filePath: string, start: number, end: number): Promise<string[]> {
+      try {
+        const content = await run(["cat", filePath], { cwd });
+        const lines = content.split("\n");
+        // 1-indexed, inclusive
+        return lines.slice(start - 1, end);
+      } catch {
+        return [];
+      }
+    },
+
     /**
      * Compute the appropriate diff base for the current branch.
      * Returns { base, target } where target is always "HEAD" or "." (working tree).

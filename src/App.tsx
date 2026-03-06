@@ -27,11 +27,15 @@ type PRComment = {
 export default function App() {
   const { diff, loading, error, refresh } = useDiff();
   const [branch, setBranch] = useState("...");
+  const [hasTerminal, setHasTerminal] = useState(false);
   const [checks, setChecks] = useState<Check[]>([]);
   const [prComments, setPrComments] = useState<PRComment[]>([]);
 
   useEffect(() => {
-    api.getStatus().then((s) => setBranch(s.branch)).catch(() => {});
+    api.getStatus().then((s) => {
+      setBranch(s.branch);
+      setHasTerminal(s.terminalSurface !== null);
+    }).catch(() => {});
   }, []);
 
   const handleWSMessage = useCallback(
@@ -51,12 +55,12 @@ export default function App() {
   useWebSocket(handleWSMessage);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
-      <Toolbar branch={branch} onRefresh={refresh} />
+    <div className="min-h-screen bg-[#0d1117] text-[#c9d1d9] flex flex-col">
+      <Toolbar branch={branch} onRefresh={refresh} hasTerminal={hasTerminal} />
       <div className="flex-1 overflow-auto p-4">
         <div className="flex gap-4">
           <div className="flex-1 min-w-0">
-            <DiffView diff={diff} loading={loading} error={error} onRefresh={refresh} />
+            <DiffView diff={diff} loading={loading} error={error} onRefresh={refresh} hasTerminal={hasTerminal} />
           </div>
           {(checks.length > 0 || prComments.length > 0) && (
             <div className="w-72 flex-shrink-0 space-y-4">

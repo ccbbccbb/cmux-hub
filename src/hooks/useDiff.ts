@@ -15,7 +15,8 @@ export function useDiff() {
       setError(null);
       const result = await api.getAutoDiff();
       setRawDiff(result.diff);
-      setDiff(parseDiff(result.diff));
+      // Use server-highlighted files if available, fall back to client-side parse
+      setDiff(result.files ?? parseDiff(result.diff));
       setBase(result.base);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to fetch diff");

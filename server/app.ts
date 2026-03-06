@@ -8,6 +8,8 @@ import {
   corsHeaders,
   isValidWebSocketOrigin,
 } from "./middleware/security.ts";
+import { parseDiff } from "../src/lib/diff-parser.ts";
+import { highlightDiffFiles } from "./diff-highlight.ts";
 
 type AppDeps = {
   port: number;
@@ -92,8 +94,9 @@ export function createAppConfig(deps: AppDeps) {
           const url = new URL(req.url);
           const base = url.searchParams.get("base") ?? undefined;
           const target = url.searchParams.get("target") ?? undefined;
-          const diff = await git.getDiff(base, target);
-          return jsonResponse({ diff });
+          const raw = await git.getDiff(base, target);
+          const files = await highlightDiffFiles(parseDiff(raw));
+          return jsonResponse({ diff: raw, files });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
         }
@@ -106,8 +109,9 @@ export function createAppConfig(deps: AppDeps) {
         if (secErr) return secErr;
         try {
           const range = await git.computeDiffRange();
-          const diff = await git.getDiff(range.base);
-          return jsonResponse({ diff, base: range.base, includeUntracked: range.includeUntracked });
+          const raw = await git.getDiff(range.base);
+          const files = await highlightDiffFiles(parseDiff(raw));
+          return jsonResponse({ diff: raw, files, base: range.base, includeUntracked: range.includeUntracked });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
         }
@@ -124,6 +128,24 @@ export function createAppConfig(deps: AppDeps) {
           const target = url.searchParams.get("target") ?? undefined;
           const files = await git.getDiffFiles(base, target);
           return jsonResponse({ files });
+        } catch (e) {
+          return errorResponse(e instanceof Error ? e.message : "Unknown error");
+        }
+      },
+    },
+
+    "/api/file-lines": {
+      async GET(req: Request) {
+        const secErr = validateRequest(req, securityConfig);
+        if (secErr) return secErr;
+        try {
+          const url = new URL(req.url);
+          const path = url.searchParams.get("path");
+          const start = parseInt(url.searchParams.get("start") ?? "1", 10);
+          const end = parseInt(url.searchParams.get("end") ?? "1", 10);
+          if (!path) return errorResponse("path required", 400);
+          const lines = await git.getFileLines(path, start, end);
+          return jsonResponse({ lines });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
         }
@@ -179,11 +201,12 @@ export function createAppConfig(deps: AppDeps) {
         try {
           const body = await req.json() as {
             file: string;
-            line: number;
+            startLine: number;
+            endLine: number;
             comment: string;
             surfaceId?: string;
           };
-          await cmux.sendComment(body.file, body.line, body.comment, resolveSurfaceId(body.surfaceId));
+          await cmux.sendComment(body.file, body.startLine, body.endLine, body.comment, resolveSurfaceId(body.surfaceId));
           return jsonResponse({ ok: true });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
