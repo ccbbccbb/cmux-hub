@@ -67,7 +67,8 @@ export function DiffFile({ file, onComment, prComments = [] }: Props) {
 
     for (let hi = 0; hi < file.hunks.length; hi++) {
       const hunk = file.hunks[hi];
-      const prevHunk = hi > 0 ? file.hunks[hi - 1] : null;
+      if (!hunk) continue;
+      const prevHunk = hi > 0 ? (file.hunks[hi - 1] ?? null) : null;
 
       // Expand button before hunk
       if (hi === 0 && hunk.newStart > 1) {

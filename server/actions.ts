@@ -75,6 +75,7 @@ export function findAction(actions: MenuItem[], id: string): ActionItem | null {
   if (topIndex === undefined || topIndex < 0 || topIndex >= actions.length) return null;
 
   const item = actions[topIndex];
+  if (!item) return null;
   if (parts.length === 1) {
     return isSubmenu(item) ? null : item;
   }
@@ -82,7 +83,7 @@ export function findAction(actions: MenuItem[], id: string): ActionItem | null {
   if (parts.length === 2 && isSubmenu(item)) {
     const subIndex = parts[1];
     if (subIndex === undefined || subIndex < 0 || subIndex >= item.submenu.length) return null;
-    return item.submenu[subIndex];
+    return item.submenu[subIndex] ?? null;
   }
 
   return null;

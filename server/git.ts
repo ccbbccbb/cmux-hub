@@ -122,7 +122,7 @@ export function createGitService(run: CommandRunner, cwd: string) {
         .split("\n")
         .filter(Boolean)
         .map((line) => {
-          const [hash, message, relativeDate] = line.split("\t");
+          const [hash = "", message = "", relativeDate = ""] = line.split("\t");
           return { hash, message, relativeDate };
         });
     },

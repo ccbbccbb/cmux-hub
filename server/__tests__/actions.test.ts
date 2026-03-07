@@ -153,7 +153,7 @@ describe("findAction", () => {
 
 describe("validateActions", () => {
   test("valid actions", () => {
-    const data = [
+    const data: MenuItem[] = [
       { label: "Commit", type: "shell", command: "git commit" },
       { label: "Review", type: "paste-and-enter", command: "claude review" },
       { label: "Paste", type: "paste", command: "echo hi" },
@@ -162,7 +162,7 @@ describe("validateActions", () => {
   });
 
   test("valid submenu", () => {
-    const data = [
+    const data: MenuItem[] = [
       {
         label: "More",
         submenu: [{ label: "Amend", type: "shell", command: "git commit --amend" }],
@@ -172,7 +172,7 @@ describe("validateActions", () => {
   });
 
   test("valid action with input", () => {
-    const data = [
+    const data: MenuItem[] = [
       {
         label: "Commit",
         type: "shell",

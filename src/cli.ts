@@ -25,10 +25,19 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
 });
 
+if (positionals[0] === "update") {
+  const { runUpdateSafe } = await import("../server/updater.ts");
+  await runUpdateSafe();
+  process.exit(0);
+}
+
 if (values.help) {
   console.log(`cmux-hub - Diff viewer for cmux
 
-Usage: cmux-hub [options] [target_dir]
+Usage: cmux-hub [command] [options] [target_dir]
+
+Commands:
+  update                 Update cmux-hub to the latest version
 
 Options:
   -p, --port <port>      Server port (default: 4567)
@@ -42,7 +51,8 @@ Examples:
   cmux-hub /path/to/project             # Specify target directory
   cmux-hub --actions actions.json       # Custom toolbar actions
   cat actions.json | cmux-hub -a -      # Read actions from stdin
-  cmux-hub --dry-run                    # Development mode`);
+  cmux-hub --dry-run                    # Development mode
+  cmux-hub update                       # Update to latest version`);
   process.exit(0);
 }
 

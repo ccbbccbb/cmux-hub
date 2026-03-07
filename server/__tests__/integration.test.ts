@@ -122,7 +122,7 @@ beforeAll(async () => {
   server_ = serve({
     port: PORT,
     hostname: "127.0.0.1",
-    routes: app.apiRoutes,
+    routes: app.apiRoutes as Parameters<typeof serve>[0]["routes"],
     websocket: app.websocket,
     fetch: app.fetch,
     development: false,

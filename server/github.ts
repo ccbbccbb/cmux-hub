@@ -53,7 +53,7 @@ export function createGitHubService(run: CommandRunner, cwd: string) {
         "1",
       ]);
       const results: PRInfo[] = JSON.parse(raw);
-      return results.length > 0 ? results[0] : null;
+      return results.length > 0 ? (results[0] ?? null) : null;
     },
 
     async getPRComments(prNumber: number): Promise<PRComment[]> {

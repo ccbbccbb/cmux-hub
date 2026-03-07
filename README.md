@@ -19,13 +19,27 @@ Diff viewer for [cmux](https://cmux.dev). Displays branch changes with syntax hi
 
 ## Install
 
+Download binary from [GitHub Releases](https://github.com/azu/cmux-hub/releases/latest):
+
 ```bash
-bun install
+mkdir -p ~/.local/bin
+curl -fsSL "https://github.com/azu/cmux-hub/releases/latest/download/cmux-hub-darwin-arm64" -o ~/.local/bin/cmux-hub
+chmod +x ~/.local/bin/cmux-hub
+```
+
+## Update
+
+```bash
+cmux-hub update
 ```
 
 ## Usage
 
 ### Development
+
+```bash
+bun install
+```
 
 ```bash
 # HMR with hot reload

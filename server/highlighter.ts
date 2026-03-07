@@ -1,4 +1,4 @@
-import { createHighlighter, type Highlighter } from "shiki";
+import { createHighlighter, type Highlighter, type BundledLanguage } from "shiki";
 
 let highlighterPromise: Promise<Highlighter> | null = null;
 
@@ -76,7 +76,7 @@ export async function highlightLines(
   try {
     const highlighter = await getHighlighter();
     const result = highlighter.codeToTokens(code, {
-      lang,
+      lang: lang as BundledLanguage,
       theme: "github-dark",
     });
     return result.tokens.map((line) =>

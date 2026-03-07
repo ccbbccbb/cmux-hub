@@ -6,9 +6,7 @@ import { execSync } from "node:child_process";
 
 // Resolve repo dir from the test server's /api/status endpoint
 async function getRepoDir(
-  request: typeof test extends (name: string, fn: (args: infer T) => void) => void
-    ? T["request"]
-    : never,
+  request: import("@playwright/test").APIRequestContext,
 ) {
   const res = await request.get("/api/status", {
     headers: { host: "127.0.0.1:14568" },
@@ -110,8 +108,8 @@ test("clicking a diff line opens the comment form, and submitting sends the comm
   await expect(commentForm).not.toBeVisible();
   // Verify the request was sent with correct payload
   assert(commentPayload !== null, "comment API request was not sent");
-  expect(commentPayload.comment).toBe("This looks good");
-  expect(commentPayload.file).toContain("hello.ts");
+  expect((commentPayload as Record<string, unknown>).comment).toBe("This looks good");
+  expect((commentPayload as Record<string, unknown>).file).toContain("hello.ts");
 });
 
 test("GET /api/status returns the current branch name", async ({ request }) => {
