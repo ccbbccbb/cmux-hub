@@ -48,11 +48,14 @@ export function shellEscape(value: string): string {
   return "'" + value.replace(/'/g, "'\\''") + "'";
 }
 
+const VALID_VAR_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
 export function buildCommandWithEnv(
   command: string,
   variables: Record<string, string>,
 ): string {
   const envParts = Object.entries(variables)
+    .filter(([key]) => VALID_VAR_NAME.test(key))
     .map(([key, value]) => `${key}=${shellEscape(value)}`)
     .join(" ");
   if (!envParts) return command;

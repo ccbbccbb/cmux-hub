@@ -54,6 +54,25 @@ describe("buildCommandWithEnv", () => {
     });
     expect(result).toBe("CMUX_HUB_CWD='/home/user/project' cd $CMUX_HUB_CWD && git status");
   });
+
+  test("rejects invalid variable keys", () => {
+    const result = buildCommandWithEnv("echo hello", {
+      "FOO=bar;evil #": "value",
+      "VALID": "ok",
+    });
+    expect(result).toBe("VALID='ok' echo hello");
+    expect(result).not.toContain("evil");
+  });
+
+  test("rejects keys starting with number", () => {
+    const result = buildCommandWithEnv("echo hello", { "1BAD": "value" });
+    expect(result).toBe("echo hello");
+  });
+
+  test("rejects keys with spaces", () => {
+    const result = buildCommandWithEnv("echo hello", { "FOO BAR": "value" });
+    expect(result).toBe("echo hello");
+  });
 });
 
 describe("isSubmenu", () => {

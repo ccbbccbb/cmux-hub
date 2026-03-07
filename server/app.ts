@@ -325,36 +325,6 @@ export function createAppConfig(deps: AppDeps) {
       },
     },
 
-    "/api/commit": {
-      async POST(req: Request) {
-        const secErr = validateRequest(req, securityConfig);
-        if (secErr) return secErr;
-        try {
-          const body = await req.json() as { message: string; surfaceId?: string };
-          const command = github.buildCommitCommand(body.message);
-          await cmux.sendCommand(command, resolveSurfaceId(body.surfaceId));
-          return jsonResponse({ ok: true, command });
-        } catch (e) {
-          return errorResponse(e instanceof Error ? e.message : "Unknown error");
-        }
-      },
-    },
-
-    "/api/pr/create": {
-      async POST(req: Request) {
-        const secErr = validateRequest(req, securityConfig);
-        if (secErr) return secErr;
-        try {
-          const body = await req.json() as { title: string; body?: string; surfaceId?: string };
-          const command = github.buildCreatePRCommand(body.title, body.body);
-          await cmux.sendCommand(command, resolveSurfaceId(body.surfaceId));
-          return jsonResponse({ ok: true, command });
-        } catch (e) {
-          return errorResponse(e instanceof Error ? e.message : "Unknown error");
-        }
-      },
-    },
-
     "/api/pr": {
       async GET(req: Request) {
         const secErr = validateRequest(req, securityConfig);
@@ -390,22 +360,6 @@ export function createAppConfig(deps: AppDeps) {
         try {
           const checks = await github.getCIChecks();
           return jsonResponse({ checks });
-        } catch (e) {
-          return errorResponse(e instanceof Error ? e.message : "Unknown error");
-        }
-      },
-    },
-
-    "/api/review/start": {
-      async POST(req: Request) {
-        const secErr = validateRequest(req, securityConfig);
-        if (secErr) return secErr;
-        try {
-          const body = await req.json() as { prompt?: string; surfaceId?: string };
-          const prompt = body.prompt ?? "このPRの変更をレビューしてください";
-          const command = `claude "${prompt}"`;
-          await cmux.sendCommand(command, resolveSurfaceId(body.surfaceId));
-          return jsonResponse({ ok: true, command });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
         }

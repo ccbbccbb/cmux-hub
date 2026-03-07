@@ -63,27 +63,6 @@ describe("createGitHubService", () => {
     expect(checks).toEqual([]);
   });
 
-  test("buildCreatePRCommand", () => {
-    const runner: CommandRunner = async () => "";
-    const gh = createGitHubService(runner, "/tmp/test");
-    const cmd = gh.buildCreatePRCommand("My Title", "My body");
-    expect(cmd).toBe('gh pr create --title "My Title" --body "My body"');
-  });
-
-  test("buildCreatePRCommand without body", () => {
-    const runner: CommandRunner = async () => "";
-    const gh = createGitHubService(runner, "/tmp/test");
-    const cmd = gh.buildCreatePRCommand("My Title");
-    expect(cmd).toBe('gh pr create --title "My Title"');
-  });
-
-  test("buildCommitCommand", () => {
-    const runner: CommandRunner = async () => "";
-    const gh = createGitHubService(runner, "/tmp/test");
-    const cmd = gh.buildCommitCommand("fix: something");
-    expect(cmd).toBe('git commit -m "fix: something"');
-  });
-
   test("passes cwd to command runner", async () => {
     let capturedCwd: string | undefined;
     const runner: CommandRunner = async (cmd, options) => {

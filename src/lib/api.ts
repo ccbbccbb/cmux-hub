@@ -76,20 +76,6 @@ export const api = {
     });
   },
 
-  commit(message: string, surfaceId?: string) {
-    return fetchJSON<{ ok: boolean; command: string }>("/api/commit", {
-      method: "POST",
-      body: JSON.stringify({ message, surfaceId }),
-    });
-  },
-
-  createPR(title: string, body?: string, surfaceId?: string) {
-    return fetchJSON<{ ok: boolean; command: string }>("/api/pr/create", {
-      method: "POST",
-      body: JSON.stringify({ title, body, surfaceId }),
-    });
-  },
-
   getPR() {
     return fetchJSON<{ pr: unknown }>("/api/pr");
   },
@@ -100,13 +86,6 @@ export const api = {
 
   getCI() {
     return fetchJSON<{ checks: unknown[] }>("/api/ci");
-  },
-
-  startReview(prompt?: string, surfaceId?: string) {
-    return fetchJSON<{ ok: boolean; command: string }>("/api/review/start", {
-      method: "POST",
-      body: JSON.stringify({ prompt, surfaceId }),
-    });
   },
 
   executeAction(id: string, variables?: Record<string, string>, surfaceId?: string) {

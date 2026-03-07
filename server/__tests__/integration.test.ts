@@ -203,44 +203,6 @@ describe("API integration", () => {
     expect(sentTexts[0]).toContain("echo hello");
   });
 
-  test("POST /api/commit sends git commit command", async () => {
-    sentTexts.length = 0;
-    const res = await fetch(`${BASE_URL}/api/commit`, {
-      method: "POST",
-      headers: validHeaders({ "content-type": "application/json" }),
-      body: JSON.stringify({ message: "feat: add feature" }),
-    });
-    expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data.command).toContain("git commit");
-    expect(data.command).toContain("feat: add feature");
-  });
-
-  test("POST /api/pr/create sends gh pr create command", async () => {
-    sentTexts.length = 0;
-    const res = await fetch(`${BASE_URL}/api/pr/create`, {
-      method: "POST",
-      headers: validHeaders({ "content-type": "application/json" }),
-      body: JSON.stringify({ title: "My PR", body: "PR description" }),
-    });
-    expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data.command).toContain("gh pr create");
-    expect(data.command).toContain("My PR");
-  });
-
-  test("POST /api/review/start sends claude review command", async () => {
-    sentTexts.length = 0;
-    const res = await fetch(`${BASE_URL}/api/review/start`, {
-      method: "POST",
-      headers: validHeaders({ "content-type": "application/json" }),
-      body: JSON.stringify({}),
-    });
-    expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data.command).toContain("claude");
-  });
-
   // Security
 
   test("rejects requests with invalid host header", async () => {

@@ -118,7 +118,13 @@ export function createGitService(run: CommandRunner, cwd: string) {
 
     async getFileLines(filePath: string, start: number, end: number): Promise<string[]> {
       try {
-        const content = await run(["cat", filePath], { cwd });
+        // Validate path is within the repository
+        const path = await import("path");
+        const resolved = path.resolve(cwd, filePath);
+        if (!resolved.startsWith(cwd + "/") && resolved !== cwd) {
+          throw new Error("Path outside repository: " + filePath);
+        }
+        const content = await run(["cat", resolved], { cwd });
         const lines = content.split("\n");
         // 1-indexed, inclusive
         return lines.slice(start - 1, end);

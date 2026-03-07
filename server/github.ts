@@ -92,23 +92,5 @@ export function createGitHubService(run: CommandRunner, cwd: string) {
         return [];
       }
     },
-
-    /**
-     * Build gh pr create command string (to be sent to terminal via cmux)
-     */
-    buildCreatePRCommand(title: string, body?: string): string {
-      const args = ["gh", "pr", "create", "--title", JSON.stringify(title)];
-      if (body) {
-        args.push("--body", JSON.stringify(body));
-      }
-      return args.join(" ");
-    },
-
-    /**
-     * Build git commit command string (to be sent to terminal via cmux)
-     */
-    buildCommitCommand(message: string): string {
-      return `git commit -m ${JSON.stringify(message)}`;
-    },
   };
 }

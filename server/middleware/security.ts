@@ -31,7 +31,7 @@ export function isValidHost(hostHeader: string | null, config: SecurityConfig): 
  * Validate the Origin header for CORS and CSWSH protection.
  */
 export function isValidOrigin(origin: string | null, config: SecurityConfig): boolean {
-  if (!origin) return true; // same-origin requests may not include Origin
+  if (!origin) return true; // same-origin GET requests may not include Origin
   const allowed = [
     `http://localhost:${config.port}`,
     `http://127.0.0.1:${config.port}`,
@@ -78,6 +78,11 @@ export function validateRequest(req: Request, config: SecurityConfig): Response 
   }
 
   // Origin validation (CORS/CSRF)
+  // Reject null origin on write requests (blocks file:// and sandboxed iframe attacks)
+  const writeMethods = ["POST", "PUT", "DELETE", "PATCH"];
+  if (!origin && writeMethods.includes(req.method.toUpperCase()) && secFetchSite) {
+    return new Response("Forbidden: missing origin", { status: 403 });
+  }
   if (!isValidOrigin(origin, config)) {
     return new Response("Forbidden: invalid origin", { status: 403 });
   }
