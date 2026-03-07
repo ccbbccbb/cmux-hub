@@ -92,7 +92,7 @@ cmux-hub --actions actions.json
 cat actions.json | cmux-hub --actions -
 ```
 
-### Usage with cmux
+### Usage with cmux + Claude Code
 
 When launched inside cmux, cmux-hub automatically opens a browser split pane and shuts down when the pane closes. Combine with Claude Code hooks to launch cmux-hub on every session.
 
