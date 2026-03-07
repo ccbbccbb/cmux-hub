@@ -10,6 +10,6 @@ if [ ! -f "$ACTIONS" ]; then
   cp "${PLUGIN_ROOT}/defaults/actions.json" "$ACTIONS"
 fi
 
-# Start cmux-hub (it auto-detaches when running inside cmux)
+# Start cmux-hub in background so the hook returns immediately
 CMUX_HUB="${HOME}/.local/bin/cmux-hub"
-exec "$CMUX_HUB" --actions "$ACTIONS"
+"$CMUX_HUB" --actions "$ACTIONS" &
