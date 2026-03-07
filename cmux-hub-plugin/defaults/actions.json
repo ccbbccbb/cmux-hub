@@ -1,4 +1,5 @@
 [
   { "label": "Commit", "type": "paste-and-enter", "command": "commit this change" },
-  { "label": "Create PR", "type": "paste-and-enter", "command": "create a pull request" }
+  { "label": "Create PR", "type": "paste-and-enter", "command": "create a pull request" },
+  { "label": "Customize Menu", "type": "paste-and-enter", "command": "I want to customize the cmux-hub toolbar menu (.claude/cmux-hub.json). Ask me what actions I want to add or change, then edit the file. Run `cmux-hub --help` for the JSON format reference." }
 ]

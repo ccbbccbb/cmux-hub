@@ -54,6 +54,38 @@ Options:
   -v, --version          Show version
   -h, --help             Show this help
 
+Customizing Toolbar Actions:
+  The toolbar menu is configured via .claude/cmux-hub.json in your project.
+  The plugin copies a default file on first run. Edit it to add your own actions.
+
+  JSON format — array of ActionItem or SubmenuItem:
+
+    ActionItem:
+      {
+        "label": "Button Label",
+        "command": "command to run",
+        "type": "paste-and-enter" | "shell" | "paste",
+        "input": { "placeholder": "Prompt text...", "variable": "VAR" }  // optional
+      }
+
+    SubmenuItem:
+      {
+        "label": "Menu Label",
+        "submenu": [ ...ActionItem[] ]
+      }
+
+  Action types:
+    paste-and-enter  Paste command into cmux terminal and press Enter
+    shell            Execute as subshell on server (returns stdout/stderr)
+    paste            Paste into cmux terminal without pressing Enter
+
+  User input:
+    Add "input" to prompt the user for a value before running.
+    The variable is injected via env prefix: VAR='value' command.
+
+  Built-in variables (shell type only):
+    CMUX_HUB_CWD    Repository working directory
+
 Examples:
   cmux-hub                              # Use current directory
   cmux-hub /path/to/project             # Specify target directory
