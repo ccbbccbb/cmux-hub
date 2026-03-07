@@ -28,9 +28,7 @@ export function PRComments({ comments }: Props) {
 
   return (
     <div className="border border-gray-700 rounded-lg p-3 mb-4">
-      <h3 className="text-sm font-semibold text-gray-400 mb-2">
-        PR Comments ({comments.length})
-      </h3>
+      <h3 className="text-sm font-semibold text-gray-400 mb-2">PR Comments ({comments.length})</h3>
       <div className="space-y-3">
         {comments.map((comment) => (
           <div

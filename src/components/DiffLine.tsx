@@ -46,7 +46,14 @@ const LINE_TEXT: Record<DiffLineType["type"], string> = {
   header: "text-[#58a6ff]",
 };
 
-export function DiffLine({ line, reviewMode, selected, canComment, onMouseDown, onMouseEnter }: Props) {
+export function DiffLine({
+  line,
+  reviewMode,
+  selected,
+  canComment,
+  onMouseDown,
+  onMouseEnter,
+}: Props) {
   const prefix = line.type === "add" ? "+" : line.type === "delete" ? "-" : " ";
   const selectedBg = selected ? "!bg-[#264f78]" : "";
   const hasTokens = line.tokens && line.tokens.length > 0;
@@ -56,7 +63,7 @@ export function DiffLine({ line, reviewMode, selected, canComment, onMouseDown, 
   const gutterBg = reviewMode ? "bg-[#161b22]" : GUTTER_BG[line.type];
   const gutterText = reviewMode ? "text-[#848d97]" : GUTTER_TEXT[line.type];
   const prefixColor = reviewMode ? "text-transparent" : PREFIX_COLOR[line.type];
-  const textColor = hasTokens ? "" : (reviewMode ? "text-[#adbac7]" : LINE_TEXT[line.type]);
+  const textColor = hasTokens ? "" : reviewMode ? "text-[#adbac7]" : LINE_TEXT[line.type];
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (onMouseDown) {
@@ -81,19 +88,15 @@ export function DiffLine({ line, reviewMode, selected, canComment, onMouseDown, 
       >
         {line.newLineNumber ?? ""}
       </td>
-      <td className={`${prefixColor} w-4 text-center select-none align-top pl-2`}>
-        {prefix}
-      </td>
+      <td className={`${prefixColor} w-4 text-center select-none align-top pl-2`}>{prefix}</td>
       <td className={`${textColor} px-2 whitespace-pre-wrap break-all`}>
-        {hasTokens ? (
-          line.tokens?.map((token, i) => (
-            <span key={i} style={token.color ? { color: token.color } : undefined}>
-              {token.content}
-            </span>
-          ))
-        ) : (
-          line.content
-        )}
+        {hasTokens
+          ? line.tokens?.map((token, i) => (
+              <span key={i} style={token.color ? { color: token.color } : undefined}>
+                {token.content}
+              </span>
+            ))
+          : line.content}
       </td>
     </tr>
   );

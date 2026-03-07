@@ -45,7 +45,7 @@ export function DiffFile({ file, onComment }: Props) {
   // Review mode: no diff coloring for new files or files with only additions
   const isReviewMode = useMemo(() => {
     if (file.isNew) return true;
-    return file.hunks.every(hunk => hunk.lines.every(line => line.type === "add"));
+    return file.hunks.every((hunk) => hunk.lines.every((line) => line.type === "add"));
   }, [file]);
 
   // Flatten all lines with sequential index, including expand buttons
@@ -131,19 +131,25 @@ export function DiffFile({ file, onComment }: Props) {
   const selMin = selStart !== null && selEnd !== null ? Math.min(selStart, selEnd) : null;
   const selMax = selStart !== null && selEnd !== null ? Math.max(selStart, selEnd) : null;
 
-  const handleMouseDown = useCallback((index: number) => {
-    if (!onComment) return;
-    setSelStart(index);
-    setSelEnd(index);
-    setDragging(true);
-    setShowComment(false);
-  }, [onComment]);
-
-  const handleMouseEnter = useCallback((index: number) => {
-    if (dragging) {
+  const handleMouseDown = useCallback(
+    (index: number) => {
+      if (!onComment) return;
+      setSelStart(index);
       setSelEnd(index);
-    }
-  }, [dragging]);
+      setDragging(true);
+      setShowComment(false);
+    },
+    [onComment],
+  );
+
+  const handleMouseEnter = useCallback(
+    (index: number) => {
+      if (dragging) {
+        setSelEnd(index);
+      }
+    },
+    [dragging],
+  );
 
   useEffect(() => {
     if (!dragging) return;
@@ -179,43 +185,46 @@ export function DiffFile({ file, onComment }: Props) {
     return null;
   }, [flatItems, selMin, selMax]);
 
-  const handleSubmitComment = useCallback((comment: string) => {
-    const range = resolveLineRange();
-    if (onComment && range) {
-      onComment(file.newPath, range[0], range[1], comment);
-    }
-    handleCancelComment();
-  }, [onComment, file.newPath, resolveLineRange, handleCancelComment]);
+  const handleSubmitComment = useCallback(
+    (comment: string) => {
+      const range = resolveLineRange();
+      if (onComment && range) {
+        onComment(file.newPath, range[0], range[1], comment);
+      }
+      handleCancelComment();
+    },
+    [onComment, file.newPath, resolveLineRange, handleCancelComment],
+  );
 
-  const handleExpand = useCallback(async (direction: string, fromLine: number, toLine: number, hunkIndex: number) => {
-    const key = direction === "up" ? `before-${hunkIndex}`
-      : direction === "down" ? `after-${hunkIndex}`
-      : `between-${hunkIndex}`;
+  const handleExpand = useCallback(
+    async (direction: string, fromLine: number, toLine: number, hunkIndex: number) => {
+      const key =
+        direction === "up"
+          ? `before-${hunkIndex}`
+          : direction === "down"
+            ? `after-${hunkIndex}`
+            : `between-${hunkIndex}`;
 
-    setLoadingExpand(key);
-    try {
-      const { lines } = await api.getFileLines(file.newPath, fromLine, toLine);
-      const contextLines: DiffLineType[] = lines.map((content, i) => ({
-        type: "context" as const,
-        content,
-        oldLineNumber: fromLine + i,
-        newLineNumber: fromLine + i,
-      }));
-      setExpandedLines(prev => new Map(prev).set(key, contextLines));
-    } catch {
-      // ignore
-    } finally {
-      setLoadingExpand(null);
-    }
-  }, [file.newPath]);
+      setLoadingExpand(key);
+      try {
+        const { lines } = await api.getFileLines(file.newPath, fromLine, toLine);
+        const contextLines: DiffLineType[] = lines.map((content, i) => ({
+          type: "context" as const,
+          content,
+          oldLineNumber: fromLine + i,
+          newLineNumber: fromLine + i,
+        }));
+        setExpandedLines((prev) => new Map(prev).set(key, contextLines));
+      } catch {
+        // ignore
+      } finally {
+        setLoadingExpand(null);
+      }
+    },
+    [file.newPath],
+  );
 
-  const badge = file.isNew
-    ? "New"
-    : file.isDeleted
-      ? "Deleted"
-      : file.isRenamed
-        ? "Renamed"
-        : null;
+  const badge = file.isNew ? "New" : file.isDeleted ? "Deleted" : file.isRenamed ? "Renamed" : null;
 
   const badgeColor = file.isNew
     ? "bg-[#238636] text-white"
@@ -224,12 +233,17 @@ export function DiffFile({ file, onComment }: Props) {
       : "bg-[#9e6a03] text-white";
 
   return (
-    <div data-testid="diff-file" className="border border-[#30363d] rounded-md overflow-hidden mb-4">
+    <div
+      data-testid="diff-file"
+      className="border border-[#30363d] rounded-md overflow-hidden mb-4"
+    >
       <div
         className="flex items-center gap-2 px-4 py-2 bg-[#161b22] border-b border-[#30363d] cursor-pointer hover:bg-[#1c2128] sticky top-0 z-10"
         onClick={() => setCollapsed(!collapsed)}
       >
-        <span className="text-[#848d97] select-none text-xs">{collapsed ? "\u25b6" : "\u25bc"}</span>
+        <span className="text-[#848d97] select-none text-xs">
+          {collapsed ? "\u25b6" : "\u25bc"}
+        </span>
         <span className="text-[#adbac7] font-mono text-sm flex-1">{file.newPath}</span>
         {badge && (
           <span className={`${badgeColor} text-xs px-2 py-0.5 rounded-full font-medium`}>
@@ -240,7 +254,7 @@ export function DiffFile({ file, onComment }: Props) {
       {!collapsed && (
         <table className="w-full border-collapse">
           <tbody>
-            {flatItems.map((item, i) => {
+            {flatItems.map((item) => {
               if (item.type === "hunk-header") {
                 return (
                   <tr key={`hdr-${item.hunkIndex}`} className="bg-[#121d2f]">
@@ -252,9 +266,12 @@ export function DiffFile({ file, onComment }: Props) {
               }
 
               if (item.type === "expand") {
-                const key = item.direction === "up" ? `before-${item.hunkIndex}`
-                  : item.direction === "down" ? `after-${item.hunkIndex}`
-                  : `between-${item.hunkIndex}`;
+                const key =
+                  item.direction === "up"
+                    ? `before-${item.hunkIndex}`
+                    : item.direction === "down"
+                      ? `after-${item.hunkIndex}`
+                      : `between-${item.hunkIndex}`;
                 const isLoading = loadingExpand === key;
 
                 return (
@@ -263,17 +280,25 @@ export function DiffFile({ file, onComment }: Props) {
                       <button
                         className="text-[#58a6ff] hover:text-[#79c0ff] text-xs font-mono px-4 py-0.5 disabled:opacity-50"
                         disabled={isLoading}
-                        onClick={() => handleExpand(item.direction, item.fromLine, item.toLine, item.hunkIndex)}
+                        onClick={() =>
+                          handleExpand(item.direction, item.fromLine, item.toLine, item.hunkIndex)
+                        }
                       >
-                        {isLoading ? "..." : item.direction === "up" ? "↑ Show lines above" : item.direction === "down" ? "↓ Show lines below" : `↕ Show ${item.toLine - item.fromLine + 1} hidden lines`}
+                        {isLoading
+                          ? "..."
+                          : item.direction === "up"
+                            ? "↑ Show lines above"
+                            : item.direction === "down"
+                              ? "↓ Show lines below"
+                              : `↕ Show ${item.toLine - item.fromLine + 1} hidden lines`}
                       </button>
                     </td>
                   </tr>
                 );
               }
 
-              const isSelected = selMin !== null && selMax !== null
-                && item.index >= selMin && item.index <= selMax;
+              const isSelected =
+                selMin !== null && selMax !== null && item.index >= selMin && item.index <= selMax;
               const isEndOfSelection = showComment && item.index === selMax;
 
               return (

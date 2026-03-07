@@ -2,10 +2,10 @@
   "name": "cmux-hub",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "bin": {
     "cmux-hub": "./src/cli.ts"
   },
+  "type": "module",
   "scripts": {
     "dev": "bun --hot src/cli.ts",
     "start": "NODE_ENV=production bun src/index.ts",

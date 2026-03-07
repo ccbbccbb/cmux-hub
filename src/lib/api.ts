@@ -21,11 +21,18 @@ export const api = {
     if (base) params.set("base", base);
     if (target) params.set("target", target);
     const qs = params.toString();
-    return fetchJSON<{ diff: string; files?: import("./diff-parser.ts").ParsedDiff }>(`/api/diff${qs ? `?${qs}` : ""}`);
+    return fetchJSON<{ diff: string; files?: import("./diff-parser.ts").ParsedDiff }>(
+      `/api/diff${qs ? `?${qs}` : ""}`,
+    );
   },
 
   getAutoDiff() {
-    return fetchJSON<{ diff: string; files?: import("./diff-parser.ts").ParsedDiff; base: string; includeUntracked: boolean }>("/api/diff/auto");
+    return fetchJSON<{
+      diff: string;
+      files?: import("./diff-parser.ts").ParsedDiff;
+      base: string;
+      includeUntracked: boolean;
+    }>("/api/diff/auto");
   },
 
   getDiffFiles(base?: string, target?: string) {
@@ -62,7 +69,13 @@ export const api = {
     });
   },
 
-  sendComment(file: string, startLine: number, endLine: number, comment: string, surfaceId?: string) {
+  sendComment(
+    file: string,
+    startLine: number,
+    endLine: number,
+    comment: string,
+    surfaceId?: string,
+  ) {
     return fetchJSON<{ ok: boolean }>("/api/comment", {
       method: "POST",
       body: JSON.stringify({ file, startLine, endLine, comment, surfaceId }),

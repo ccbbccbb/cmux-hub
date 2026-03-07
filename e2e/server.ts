@@ -33,7 +33,10 @@ gitInRepo("commit -m 'initial commit'");
 
 // Create a feature branch with changes
 gitInRepo("checkout -b feature/test");
-writeFileSync(join(repoDir, "hello.ts"), 'export const greeting = "hello world";\nexport const version = 1;\n');
+writeFileSync(
+  join(repoDir, "hello.ts"),
+  'export const greeting = "hello world";\nexport const version = 1;\n',
+);
 writeFileSync(join(repoDir, "new-file.ts"), 'export function newModule() {\n  return "new";\n}\n');
 gitInRepo("add .");
 

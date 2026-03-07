@@ -32,10 +32,7 @@ export function isValidHost(hostHeader: string | null, config: SecurityConfig): 
  */
 export function isValidOrigin(origin: string | null, config: SecurityConfig): boolean {
   if (!origin) return true; // same-origin GET requests may not include Origin
-  const allowed = [
-    `http://localhost:${config.port}`,
-    `http://127.0.0.1:${config.port}`,
-  ];
+  const allowed = [`http://localhost:${config.port}`, `http://127.0.0.1:${config.port}`];
   return allowed.includes(origin);
 }
 

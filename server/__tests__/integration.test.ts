@@ -38,19 +38,21 @@ function createFakeRunner(): { runner: CommandRunner; calls: string[][] } {
     if (key.includes("diff --name-only")) return "src/index.ts\n";
     if (key.includes("branch -a")) return "main\nfeature/test\n";
     if (key.includes("status --porcelain")) return "M src/index.ts\n";
-    if (key.includes("gh pr view")) return JSON.stringify({
-      number: 42,
-      title: "Test PR",
-      state: "OPEN",
-      url: "https://github.com/test/repo/pull/42",
-      headRefName: "feature/test",
-      baseRefName: "main",
-      body: "PR body",
-    });
+    if (key.includes("gh pr view"))
+      return JSON.stringify({
+        number: 42,
+        title: "Test PR",
+        state: "OPEN",
+        url: "https://github.com/test/repo/pull/42",
+        headRefName: "feature/test",
+        baseRefName: "main",
+        body: "PR body",
+      });
     if (key.includes("gh api") && key.includes("comments")) return "";
-    if (key.includes("gh pr checks")) return JSON.stringify([
-      { name: "ci", state: "SUCCESS", conclusion: "SUCCESS", detailsUrl: "https://example.com" },
-    ]);
+    if (key.includes("gh pr checks"))
+      return JSON.stringify([
+        { name: "ci", state: "SUCCESS", conclusion: "SUCCESS", detailsUrl: "https://example.com" },
+      ]);
     throw new Error(`Unexpected command: ${key}`);
   };
   return { runner, calls };
@@ -185,7 +187,12 @@ describe("API integration", () => {
     const res = await fetch(`${BASE_URL}/api/comment`, {
       method: "POST",
       headers: validHeaders({ "content-type": "application/json" }),
-      body: JSON.stringify({ file: "src/index.ts", startLine: 42, endLine: 42, comment: "fix this" }),
+      body: JSON.stringify({
+        file: "src/index.ts",
+        startLine: 42,
+        endLine: 42,
+        comment: "fix this",
+      }),
     });
     expect(res.status).toBe(200);
     expect(sentTexts[0]).toContain("src/index.ts:42");

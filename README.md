@@ -91,21 +91,21 @@ Without it, the default Commit / Create PR / AI Review actions are shown.
 
 ### Action Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `label` | `string` | Button label |
-| `command` | `string` | Command to execute |
-| `type` | `"paste-and-enter" \| "shell" \| "paste"` | Execution mode (see below). Default: `"paste-and-enter"` |
-| `input` | `{ placeholder, variable }` | Shows an input form before executing |
-| `submenu` | `ActionItem[]` | Nested menu (instead of `command`) |
+| Field     | Type                                      | Description                                              |
+| --------- | ----------------------------------------- | -------------------------------------------------------- |
+| `label`   | `string`                                  | Button label                                             |
+| `command` | `string`                                  | Command to execute                                       |
+| `type`    | `"paste-and-enter" \| "shell" \| "paste"` | Execution mode (see below). Default: `"paste-and-enter"` |
+| `input`   | `{ placeholder, variable }`               | Shows an input form before executing                     |
+| `submenu` | `ActionItem[]`                            | Nested menu (instead of `command`)                       |
 
 ### Execution Modes
 
-| type | Behavior | Use case |
-|------|----------|----------|
-| `"shell"` | Executes as a subshell on the server. Returns stdout/stderr/exitCode | `git commit`, `gh pr create` |
-| `"paste-and-enter"` | Pastes text to cmux terminal and sends Enter | Commands for Claude Code or other terminal processes |
-| `"paste"` | Pastes text to cmux terminal without Enter | Paste text only |
+| type                | Behavior                                                             | Use case                                             |
+| ------------------- | -------------------------------------------------------------------- | ---------------------------------------------------- |
+| `"shell"`           | Executes as a subshell on the server. Returns stdout/stderr/exitCode | `git commit`, `gh pr create`                         |
+| `"paste-and-enter"` | Pastes text to cmux terminal and sends Enter                         | Commands for Claude Code or other terminal processes |
+| `"paste"`           | Pastes text to cmux terminal without Enter                           | Paste text only                                      |
 
 ### Variables
 
@@ -113,13 +113,13 @@ Commands can reference shell variables. Variables are prepended as inline enviro
 
 #### Built-in Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `$CMUX_HUB_CWD` | Target directory (absolute path) | `/home/user/project` |
-| `$CMUX_HUB_GIT_BRANCH` | Current git branch | `feat/new-feature` |
-| `$CMUX_HUB_GIT_BASE` | Diff base branch (auto-detected) | `main` |
-| `$CMUX_HUB_PORT` | Server port | `4567` |
-| `$CMUX_HUB_SURFACE_ID` | cmux terminal surface ID | `surface:123` |
+| Variable               | Description                      | Example              |
+| ---------------------- | -------------------------------- | -------------------- |
+| `$CMUX_HUB_CWD`        | Target directory (absolute path) | `/home/user/project` |
+| `$CMUX_HUB_GIT_BRANCH` | Current git branch               | `feat/new-feature`   |
+| `$CMUX_HUB_GIT_BASE`   | Diff base branch (auto-detected) | `main`               |
+| `$CMUX_HUB_PORT`       | Server port                      | `4567`               |
+| `$CMUX_HUB_SURFACE_ID` | cmux terminal surface ID         | `surface:123`        |
 
 #### User Input Variables
 

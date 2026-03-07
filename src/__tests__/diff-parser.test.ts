@@ -139,9 +139,7 @@ describe("parseDiff", () => {
   test("parses content correctly", () => {
     const result = parseDiff(SAMPLE_DIFF);
     const lines = result[0]?.hunks[0]?.lines ?? [];
-    const addedImport = lines.find(
-      (l) => l.type === "add" && l.content.includes("newModule"),
-    );
+    const addedImport = lines.find((l) => l.type === "add" && l.content.includes("newModule"));
     expect(addedImport?.content).toBe('import { newModule } from "./new";');
   });
 });

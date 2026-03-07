@@ -36,7 +36,9 @@ export function createGitHubService(run: CommandRunner, cwd: string) {
     async getCurrentPR(): Promise<PRInfo | null> {
       try {
         const raw = await gh([
-          "pr", "view", "--json",
+          "pr",
+          "view",
+          "--json",
           "number,title,state,url,headRefName,baseRefName,body",
         ]);
         return JSON.parse(raw);
@@ -54,7 +56,11 @@ export function createGitHubService(run: CommandRunner, cwd: string) {
           ".[] | {id: .id, body: .body, user: .user.login, path: .path, line: .line, createdAt: .created_at, updatedAt: .updated_at}",
         ]);
         if (!raw.trim()) return [];
-        return raw.trim().split("\n").filter(Boolean).map((line) => JSON.parse(line));
+        return raw
+          .trim()
+          .split("\n")
+          .filter(Boolean)
+          .map((line) => JSON.parse(line));
       } catch {
         return [];
       }
@@ -69,7 +75,11 @@ export function createGitHubService(run: CommandRunner, cwd: string) {
           ".[] | {id: .id, body: .body, user: .user.login, state: .state}",
         ]);
         if (!raw.trim()) return [];
-        return raw.trim().split("\n").filter(Boolean).map((line) => JSON.parse(line));
+        return raw
+          .trim()
+          .split("\n")
+          .filter(Boolean)
+          .map((line) => JSON.parse(line));
       } catch {
         return [];
       }
@@ -77,10 +87,7 @@ export function createGitHubService(run: CommandRunner, cwd: string) {
 
     async getCIChecks(): Promise<CICheck[]> {
       try {
-        const raw = await gh([
-          "pr", "checks", "--json",
-          "name,state,conclusion,detailsUrl",
-        ]);
+        const raw = await gh(["pr", "checks", "--json", "name,state,conclusion,detailsUrl"]);
         const checks = JSON.parse(raw);
         return checks.map((c: Record<string, string>) => ({
           name: c.name,

@@ -1,4 +1,3 @@
-
 # cmux-hub
 
 Diff viewer for cmux. React frontend + Bun server, communicating with cmux via Unix domain socket.
@@ -29,7 +28,7 @@ type ActionItem = {
   label: string;
   command: string;
   type: "paste-and-enter" | "shell" | "paste";
-  input?: { placeholder: string; variable: string; };
+  input?: { placeholder: string; variable: string };
 };
 ```
 

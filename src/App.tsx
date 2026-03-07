@@ -34,11 +34,14 @@ export default function App() {
   const [prComments, setPrComments] = useState<PRComment[]>([]);
 
   useEffect(() => {
-    api.getStatus().then((s) => {
-      setBranch(s.branch);
-      setHasTerminal(s.terminalSurface !== null);
-      if (s.actions) setActions(s.actions);
-    }).catch(() => {});
+    api
+      .getStatus()
+      .then((s) => {
+        setBranch(s.branch);
+        setHasTerminal(s.terminalSurface !== null);
+        if (s.actions) setActions(s.actions);
+      })
+      .catch(() => {});
   }, []);
 
   const handleWSMessage = useCallback(
@@ -65,10 +68,18 @@ export default function App() {
         </div>
       )}
       <Toolbar branch={branch} onRefresh={refresh} hasTerminal={hasTerminal} actions={actions} />
-      <div className={`flex-1 overflow-auto p-4 transition-opacity duration-200 ${refreshing ? "opacity-60" : "opacity-100"}`}>
+      <div
+        className={`flex-1 overflow-auto p-4 transition-opacity duration-200 ${refreshing ? "opacity-60" : "opacity-100"}`}
+      >
         <div className="flex gap-4">
           <div className="flex-1 min-w-0">
-            <DiffView diff={diff} loading={loading} error={error} onRefresh={refresh} hasTerminal={hasTerminal} />
+            <DiffView
+              diff={diff}
+              loading={loading}
+              error={error}
+              onRefresh={refresh}
+              hasTerminal={hasTerminal}
+            />
           </div>
           {(checks.length > 0 || prComments.length > 0) && (
             <div className="w-72 flex-shrink-0 space-y-4">

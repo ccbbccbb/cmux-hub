@@ -67,7 +67,15 @@ describe("createGitHubService", () => {
     let capturedCwd: string | undefined;
     const runner: CommandRunner = async (cmd, options) => {
       capturedCwd = options?.cwd;
-      return JSON.stringify({ number: 1, title: "", state: "", url: "", headRefName: "", baseRefName: "", body: "" });
+      return JSON.stringify({
+        number: 1,
+        title: "",
+        state: "",
+        url: "",
+        headRefName: "",
+        baseRefName: "",
+        body: "",
+      });
     };
     const gh = createGitHubService(runner, "/my/project");
     await gh.getCurrentPR();

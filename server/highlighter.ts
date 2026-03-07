@@ -65,9 +65,12 @@ type HighlightedToken = {
 
 export type HighlightedLine = HighlightedToken[];
 
-export async function highlightLines(code: string, lang: string | null): Promise<HighlightedLine[]> {
+export async function highlightLines(
+  code: string,
+  lang: string | null,
+): Promise<HighlightedLine[]> {
   if (!lang) {
-    return code.split("\n").map(line => [{ content: line }]);
+    return code.split("\n").map((line) => [{ content: line }]);
   }
 
   try {
@@ -76,13 +79,13 @@ export async function highlightLines(code: string, lang: string | null): Promise
       lang,
       theme: "github-dark",
     });
-    return result.tokens.map(line =>
-      line.map(token => ({
+    return result.tokens.map((line) =>
+      line.map((token) => ({
         content: token.content,
         color: token.color,
-      }))
+      })),
     );
   } catch {
-    return code.split("\n").map(line => [{ content: line }]);
+    return code.split("\n").map((line) => [{ content: line }]);
   }
 }

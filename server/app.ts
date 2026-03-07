@@ -144,7 +144,12 @@ export function createAppConfig(deps: AppDeps) {
           const range = await git.computeDiffRange();
           const raw = await git.getDiff(range.base);
           const files = await highlightDiffFiles(parseDiff(raw));
-          return jsonResponse({ diff: raw, files, base: range.base, includeUntracked: range.includeUntracked });
+          return jsonResponse({
+            diff: raw,
+            files,
+            base: range.base,
+            includeUntracked: range.includeUntracked,
+          });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
         }
@@ -224,7 +229,7 @@ export function createAppConfig(deps: AppDeps) {
         const secErr = validateRequest(req, securityConfig);
         if (secErr) return secErr;
         try {
-          const body = await req.json() as { text: string; surfaceId?: string };
+          const body = (await req.json()) as { text: string; surfaceId?: string };
           await cmux.sendText(body.text, resolveSurfaceId(body.surfaceId));
           return jsonResponse({ ok: true });
         } catch (e) {
@@ -238,14 +243,20 @@ export function createAppConfig(deps: AppDeps) {
         const secErr = validateRequest(req, securityConfig);
         if (secErr) return secErr;
         try {
-          const body = await req.json() as {
+          const body = (await req.json()) as {
             file: string;
             startLine: number;
             endLine: number;
             comment: string;
             surfaceId?: string;
           };
-          await cmux.sendComment(body.file, body.startLine, body.endLine, body.comment, resolveSurfaceId(body.surfaceId));
+          await cmux.sendComment(
+            body.file,
+            body.startLine,
+            body.endLine,
+            body.comment,
+            resolveSurfaceId(body.surfaceId),
+          );
           return jsonResponse({ ok: true });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
@@ -258,7 +269,7 @@ export function createAppConfig(deps: AppDeps) {
         const secErr = validateRequest(req, securityConfig);
         if (secErr) return secErr;
         try {
-          const body = await req.json() as { command: string; surfaceId?: string };
+          const body = (await req.json()) as { command: string; surfaceId?: string };
           await cmux.sendCommand(body.command, resolveSurfaceId(body.surfaceId));
           return jsonResponse({ ok: true });
         } catch (e) {
@@ -272,7 +283,7 @@ export function createAppConfig(deps: AppDeps) {
         const secErr = validateRequest(req, securityConfig);
         if (secErr) return secErr;
         try {
-          const body = await req.json() as {
+          const body = (await req.json()) as {
             id: string;
             variables?: Record<string, string>;
             surfaceId?: string;
@@ -307,7 +318,13 @@ export function createAppConfig(deps: AppDeps) {
             const stdout = await new Response(proc.stdout).text();
             const stderr = await new Response(proc.stderr).text();
             const exitCode = await proc.exited;
-            return jsonResponse({ ok: exitCode === 0, command: fullCommand, stdout, stderr, exitCode });
+            return jsonResponse({
+              ok: exitCode === 0,
+              command: fullCommand,
+              stdout,
+              stderr,
+              exitCode,
+            });
           }
           // For paste/paste-and-enter: only user-provided variables
           const termCommand = body.variables

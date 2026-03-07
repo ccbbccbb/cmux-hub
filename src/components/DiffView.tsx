@@ -12,19 +12,20 @@ type Props = {
 };
 
 export function DiffView({ diff, loading, error, onRefresh, hasTerminal = false }: Props) {
-  const handleComment = useCallback(async (file: string, startLine: number, endLine: number, comment: string) => {
-    try {
-      await api.sendComment(file, startLine, endLine, comment);
-    } catch (e) {
-      console.error("Failed to send comment:", e);
-    }
-  }, []);
+  const handleComment = useCallback(
+    async (file: string, startLine: number, endLine: number, comment: string) => {
+      try {
+        await api.sendComment(file, startLine, endLine, comment);
+      } catch (e) {
+        console.error("Failed to send comment:", e);
+      }
+    },
+    [],
+  );
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
-        Loading diff...
-      </div>
+      <div className="flex items-center justify-center h-64 text-gray-500">Loading diff...</div>
     );
   }
 
@@ -32,10 +33,7 @@ export function DiffView({ diff, loading, error, onRefresh, hasTerminal = false 
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <p className="text-red-400">{error}</p>
-        <button
-          onClick={onRefresh}
-          className="text-blue-400 hover:text-blue-300 underline"
-        >
+        <button onClick={onRefresh} className="text-blue-400 hover:text-blue-300 underline">
           Retry
         </button>
       </div>
@@ -44,16 +42,18 @@ export function DiffView({ diff, loading, error, onRefresh, hasTerminal = false 
 
   if (diff.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
-        No changes detected
-      </div>
+      <div className="flex items-center justify-center h-64 text-gray-500">No changes detected</div>
     );
   }
 
   return (
     <div data-testid="diff-view" className="space-y-2">
       {diff.map((file, idx) => (
-        <DiffFile key={`${file.newPath}-${idx}`} file={file} onComment={hasTerminal ? handleComment : undefined} />
+        <DiffFile
+          key={`${file.newPath}-${idx}`}
+          file={file}
+          onComment={hasTerminal ? handleComment : undefined}
+        />
       ))}
     </div>
   );

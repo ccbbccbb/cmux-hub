@@ -24,7 +24,10 @@ export const defaultWatcherFactory: WatcherFactory = (dir, callback) => {
   const workTreeWatcher = watch(dir, { recursive: true }, (event, filename) => {
     if (!filename) return;
     if (filename.startsWith(".git/") || filename.startsWith(".git\\")) {
-      const isRefChange = filename.includes("refs/") || filename.endsWith("HEAD") || filename.endsWith("COMMIT_EDITMSG");
+      const isRefChange =
+        filename.includes("refs/") ||
+        filename.endsWith("HEAD") ||
+        filename.endsWith("COMMIT_EDITMSG");
       if (!isRefChange) return;
     }
     if (filename.startsWith("node_modules/") || filename.startsWith("node_modules\\")) return;
@@ -37,14 +40,17 @@ export const defaultWatcherFactory: WatcherFactory = (dir, callback) => {
   if (gitDir && !gitDir.startsWith(dir + "/") && !gitDir.startsWith(dir + "\\")) {
     const gitWatcher = watch(gitDir, { recursive: true }, (event, filename) => {
       if (!filename) return;
-      const isRefChange = filename.includes("refs/") || filename.endsWith("HEAD") || filename.endsWith("COMMIT_EDITMSG");
+      const isRefChange =
+        filename.includes("refs/") ||
+        filename.endsWith("HEAD") ||
+        filename.endsWith("COMMIT_EDITMSG");
       if (!isRefChange) return;
       callback(event, filename);
     });
     watchers.push({ close: () => gitWatcher.close() });
   }
 
-  return { close: () => watchers.forEach(w => w.close()) };
+  return { close: () => watchers.forEach((w) => w.close()) };
 };
 
 export type FileWatcher = ReturnType<typeof createFileWatcher>;

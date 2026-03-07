@@ -12,7 +12,13 @@ type Props = {
   actions: MenuItem[];
 };
 
-function SimpleActionButton({ id, action, disabled, onSending, className }: {
+function SimpleActionButton({
+  id,
+  action,
+  disabled,
+  onSending,
+  className,
+}: {
   id: string;
   action: ActionItem;
   disabled: boolean;
@@ -31,13 +37,25 @@ function SimpleActionButton({ id, action, disabled, onSending, className }: {
   };
 
   return (
-    <Button variant="ghost" size="sm" onClick={handleExecute} disabled={disabled} className={className}>
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleExecute}
+      disabled={disabled}
+      className={className}
+    >
       {action.label}
     </Button>
   );
 }
 
-function SubmenuButton({ label, items, baseId, disabled, onSending }: {
+function SubmenuButton({
+  label,
+  items,
+  baseId,
+  disabled,
+  onSending,
+}: {
   label: string;
   items: ActionItem[];
   baseId: string;
@@ -81,7 +99,13 @@ function SubmenuButton({ label, items, baseId, disabled, onSending }: {
   );
 }
 
-function InputRow({ id, action, sending, onSending, onClose }: {
+function InputRow({
+  id,
+  action,
+  sending,
+  onSending,
+  onClose,
+}: {
   id: string;
   action: ActionItem;
   sending: boolean;
@@ -138,59 +162,61 @@ export function Toolbar({ branch, onRefresh, hasTerminal, actions }: Props) {
         <Button variant="ghost" size="sm" onClick={onRefresh}>
           Refresh
         </Button>
-        {hasTerminal && actions.map((item, i) => {
-          const id = String(i);
-          if (isSubmenu(item)) {
+        {hasTerminal &&
+          actions.map((item, i) => {
+            const id = String(i);
+            if (isSubmenu(item)) {
+              return (
+                <SubmenuButton
+                  key={item.label}
+                  label={item.label}
+                  items={item.submenu}
+                  baseId={id}
+                  disabled={sending}
+                  onSending={setSending}
+                />
+              );
+            }
+            if (isActionWithInput(item)) {
+              return (
+                <Button
+                  key={item.label}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setActiveInput(activeInput === id ? null : id)}
+                >
+                  {item.label}
+                </Button>
+              );
+            }
             return (
-              <SubmenuButton
+              <SimpleActionButton
                 key={item.label}
-                label={item.label}
-                items={item.submenu}
-                baseId={id}
+                id={id}
+                action={item}
                 disabled={sending}
                 onSending={setSending}
               />
             );
-          }
-          if (isActionWithInput(item)) {
-            return (
-              <Button
-                key={item.label}
-                variant="ghost"
-                size="sm"
-                onClick={() => setActiveInput(activeInput === id ? null : id)}
-              >
-                {item.label}
-              </Button>
-            );
-          }
+          })}
+      </div>
+
+      {hasTerminal &&
+        actions.map((item, i) => {
+          const id = String(i);
+          if (!isActionWithInput(item)) return null;
+          if (activeInput !== id) return null;
           return (
-            <SimpleActionButton
+            <InputRow
               key={item.label}
               id={id}
               action={item}
-              disabled={sending}
+              sending={sending}
               onSending={setSending}
+              onClose={() => setActiveInput(null)}
             />
           );
         })}
-      </div>
-
-      {hasTerminal && actions.map((item, i) => {
-        const id = String(i);
-        if (!isActionWithInput(item)) return null;
-        if (activeInput !== id) return null;
-        return (
-          <InputRow
-            key={item.label}
-            id={id}
-            action={item}
-            sending={sending}
-            onSending={setSending}
-            onClose={() => setActiveInput(null)}
-          />
-        );
-      })}
     </div>
   );
 }

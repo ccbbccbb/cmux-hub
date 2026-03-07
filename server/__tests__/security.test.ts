@@ -84,11 +84,7 @@ describe("isValidSecFetchSite", () => {
 });
 
 describe("validateRequest", () => {
-  function makeRequest(
-    url: string,
-    method: string,
-    headers: Record<string, string> = {},
-  ): Request {
+  function makeRequest(url: string, method: string, headers: Record<string, string> = {}): Request {
     return new Request(url, {
       method,
       headers: {

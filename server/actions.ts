@@ -20,7 +20,9 @@ export function isSubmenu(item: MenuItem): item is SubmenuItem {
   return "submenu" in item;
 }
 
-export function isActionWithInput(item: MenuItem): item is ActionItem & { input: { placeholder: string; variable: string } } {
+export function isActionWithInput(
+  item: MenuItem,
+): item is ActionItem & { input: { placeholder: string; variable: string } } {
   return !isSubmenu(item) && item.input !== undefined;
 }
 
@@ -50,10 +52,7 @@ export function shellEscape(value: string): string {
 
 const VALID_VAR_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
-export function buildCommandWithEnv(
-  command: string,
-  variables: Record<string, string>,
-): string {
+export function buildCommandWithEnv(command: string, variables: Record<string, string>): string {
   const envParts = Object.entries(variables)
     .filter(([key]) => VALID_VAR_NAME.test(key))
     .map(([key, value]) => `${key}=${shellEscape(value)}`)
@@ -70,7 +69,7 @@ export function buildCommandWithEnv(
 export function findAction(actions: MenuItem[], id: string): ActionItem | null {
   if (!id) return null;
   const parts = id.split(".").map(Number);
-  if (parts.some(n => isNaN(n))) return null;
+  if (parts.some((n) => isNaN(n))) return null;
 
   const topIndex = parts[0];
   if (topIndex === undefined || topIndex < 0 || topIndex >= actions.length) return null;
@@ -103,7 +102,9 @@ function validateActionItem(item: unknown, path: string): ActionItem {
     throw new Error(`${path}: "command" is required (string)`);
   }
   if (!VALID_TYPES.has(obj.type as string)) {
-    throw new Error(`${path}: "type" must be one of: shell, paste-and-enter, paste (got ${JSON.stringify(obj.type)})`);
+    throw new Error(
+      `${path}: "type" must be one of: shell, paste-and-enter, paste (got ${JSON.stringify(obj.type)})`,
+    );
   }
   if (obj.input !== undefined) {
     if (typeof obj.input !== "object" || obj.input === null) {

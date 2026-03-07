@@ -5,7 +5,11 @@ import { join } from "path";
 import { execSync } from "child_process";
 
 // Resolve repo dir from the test server's /api/status endpoint
-async function getRepoDir(request: typeof test extends (name: string, fn: (args: infer T) => void) => void ? T["request"] : never) {
+async function getRepoDir(
+  request: typeof test extends (name: string, fn: (args: infer T) => void) => void
+    ? T["request"]
+    : never,
+) {
   const res = await request.get("/api/status", {
     headers: { host: "127.0.0.1:14568" },
   });
@@ -55,7 +59,7 @@ test("modifying a file updates the diff view automatically", async ({ page, requ
   // Verify initial file count
   await expect(diffView.getByTestId("diff-file")).toHaveCount(2);
   // Add a new file to the repo
-  writeFileSync(join(repoDir, "added.ts"), 'export const added = true;\n');
+  writeFileSync(join(repoDir, "added.ts"), "export const added = true;\n");
   execSync("git add added.ts", { cwd: repoDir, stdio: "pipe" });
   // Wait for the diff view to update (watcher debounce + fetch)
   await expect(diffView.getByTestId("diff-file")).toHaveCount(3);
@@ -69,7 +73,7 @@ test("clicking Refresh re-fetches the diff", async ({ page, request }) => {
   const diffView = page.getByTestId("diff-view");
   await expect(diffView).toBeVisible();
   // Add a new file to the repo
-  writeFileSync(join(repoDir, "refreshed.ts"), 'export const refreshed = true;\n');
+  writeFileSync(join(repoDir, "refreshed.ts"), "export const refreshed = true;\n");
   execSync("git add refreshed.ts", { cwd: repoDir, stdio: "pipe" });
   // Click the Refresh button
   await page.getByTestId("toolbar").getByRole("button", { name: "Refresh" }).click();
@@ -77,7 +81,9 @@ test("clicking Refresh re-fetches the diff", async ({ page, request }) => {
   await expect(diffView).toContainText("refreshed.ts");
 });
 
-test("clicking a diff line opens the comment form, and submitting sends the comment", async ({ page }) => {
+test("clicking a diff line opens the comment form, and submitting sends the comment", async ({
+  page,
+}) => {
   // Intercept /api/comment to verify the request payload
   let commentPayload: Record<string, unknown> | null = null;
   await page.route("**/api/comment", async (route) => {
