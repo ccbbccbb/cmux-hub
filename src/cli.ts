@@ -75,15 +75,21 @@ async function resolveTerminalSurface(): Promise<string | undefined> {
 
 const TERMINAL_SURFACE = await resolveTerminalSurface();
 
-// Load actions
+// Load actions. Cache in globalThis for bun --hot (stdin can only be read once)
 let actions: MenuItem[] = DEFAULT_ACTIONS;
 if (values.actions) {
-  try {
-    actions = await loadActions(values.actions);
-    logger.debug("loaded", actions.length, "actions from", values.actions);
-  } catch (e) {
-    console.error("Failed to load actions:", e instanceof Error ? e.message : e);
-    process.exit(1);
+  const g = globalThis as Record<string, unknown>;
+  if (g.__cmuxHubActions) {
+    actions = g.__cmuxHubActions as MenuItem[];
+  } else {
+    try {
+      actions = await loadActions(values.actions);
+      g.__cmuxHubActions = actions;
+      logger.debug("loaded", actions.length, "actions from", values.actions);
+    } catch (e) {
+      console.error("Failed to load actions:", e instanceof Error ? e.message : e);
+      process.exit(1);
+    }
   }
 }
 
