@@ -10,6 +10,7 @@ import {
 } from "./middleware/security.ts";
 import { parseDiff } from "../src/lib/diff-parser.ts";
 import { highlightDiffFiles } from "./diff-highlight.ts";
+import { logger } from "./logger.ts";
 
 type AppDeps = {
   port: number;
@@ -42,9 +43,37 @@ export function createAppConfig(deps: AppDeps) {
     return surfaceId ?? defaultSurfaceId;
   }
 
-  const wsClients = new Set<ServerWebSocket<unknown>>();
+  // Map<ws, lastPongTimestamp>
+  const wsClients = new Map<ServerWebSocket<unknown>, number>();
   let hasHadClients = false;
   let shutdownTimer: ReturnType<typeof setTimeout> | null = null;
+  let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
+  const HEARTBEAT_INTERVAL = 30_000;
+  const HEARTBEAT_TIMEOUT = 45_000;
+
+  function startHeartbeat() {
+    if (heartbeatTimer) return;
+    heartbeatTimer = setInterval(() => {
+      const now = Date.now();
+      for (const [ws, lastPong] of wsClients) {
+        if (now - lastPong > HEARTBEAT_TIMEOUT) {
+          logger.debug("stale ws detected, closing (no pong for", now - lastPong, "ms)");
+          ws.close();
+        } else {
+          ws.ping();
+        }
+      }
+      logger.debug("heartbeat ping sent to", wsClients.size, "clients");
+    }, HEARTBEAT_INTERVAL);
+  }
+
+  function stopHeartbeat() {
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+  }
 
   let pollTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -60,7 +89,7 @@ export function createAppConfig(deps: AppDeps) {
           type: "pr-updated",
           data: { pr, checks, comments },
         });
-        for (const ws of wsClients) {
+        for (const ws of wsClients.keys()) {
           ws.send(message);
         }
       } catch {
@@ -328,28 +357,38 @@ export function createAppConfig(deps: AppDeps) {
 
     websocket: {
       open(ws: ServerWebSocket<unknown>) {
-        wsClients.add(ws);
+        wsClients.set(ws, Date.now());
         hasHadClients = true;
+        logger.debug("ws open, clients:", wsClients.size);
         if (shutdownTimer) {
+          logger.debug("shutdown timer cancelled (new client)");
           clearTimeout(shutdownTimer);
           shutdownTimer = null;
         }
         startPolling();
+        startHeartbeat();
       },
       message(_ws: ServerWebSocket<unknown>, _message: string | Buffer) {
         // No client→server messages expected yet
       },
+      pong(ws: ServerWebSocket<unknown>) {
+        wsClients.set(ws, Date.now());
+        logger.debug("ws pong received, clients:", wsClients.size);
+      },
       close(ws: ServerWebSocket<unknown>) {
         wsClients.delete(ws);
+        logger.debug("ws close, clients:", wsClients.size);
         if (wsClients.size === 0) {
           if (pollTimer) {
             clearInterval(pollTimer);
             pollTimer = null;
           }
+          stopHeartbeat();
           // Auto-shutdown when all clients disconnect
           if (hasHadClients && deps.autoShutdownMs !== undefined) {
+            logger.debug("shutdown timer started:", deps.autoShutdownMs, "ms");
             shutdownTimer = setTimeout(() => {
-              console.log("All clients disconnected, shutting down.");
+              logger.info("All clients disconnected, shutting down.");
               process.exit(0);
             }, deps.autoShutdownMs);
           }
@@ -397,7 +436,7 @@ export function createAppConfig(deps: AppDeps) {
         deps.watcher.start();
         deps.watcher.onChanged(() => {
           const message = JSON.stringify({ type: "diff-updated" });
-          for (const ws of wsClients) {
+          for (const ws of wsClients.keys()) {
             ws.send(message);
           }
         });

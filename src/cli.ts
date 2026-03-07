@@ -7,6 +7,7 @@ import { createCmuxService, createSocketConnector, createDryRunConnector } from 
 import { createGitHubService } from "../server/github.ts";
 import { createFileWatcher, defaultWatcherFactory } from "../server/watcher.ts";
 import { createAppConfig } from "../server/app.ts";
+import { logger, enableDebug } from "../server/logger.ts";
 
 const CMUX_BIN = "/Applications/cmux.app/Contents/Resources/bin/cmux";
 
@@ -15,6 +16,7 @@ const { values, positionals } = parseArgs({
   options: {
     port: { type: "string", short: "p", default: process.env.PORT ?? "4567" },
     "dry-run": { type: "boolean", default: process.env.CMUX_HUB_DRY_RUN === "true" },
+    debug: { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
   allowPositionals: true,
@@ -28,6 +30,7 @@ Usage: cmux-hub [options] [target_dir]
 Options:
   -p, --port <port>   Server port (default: 4567)
   --dry-run           Don't connect to cmux socket
+  --debug             Enable debug logging
   -h, --help          Show this help
 
 Examples:
@@ -35,6 +38,10 @@ Examples:
   cmux-hub /path/to/project    # Specify target directory
   cmux-hub --dry-run            # Development mode`);
   process.exit(0);
+}
+
+if (values.debug) {
+  enableDebug();
 }
 
 const PORT = parseInt(values.port ?? "4567", 10);
@@ -104,8 +111,8 @@ const server = serve({
 app.setServer(server);
 app.startWatcher();
 
-console.log(`Server running at http://127.0.0.1:${PORT}`);
-console.log(`Watching: ${CWD}`);
+logger.info(`Server running at http://127.0.0.1:${PORT}`);
+logger.info(`Watching: ${CWD}`);
 
 // Wait for server to be ready before opening browser
 async function waitForReady() {
@@ -145,17 +152,21 @@ async function isSurfaceAlive(surfaceRef: string): Promise<boolean> {
     const proc = Bun.spawn([CMUX_BIN, "surface-health"], { stdout: "pipe", stderr: "pipe" });
     const output = await new Response(proc.stdout).text();
     await proc.exited;
-    return output.includes(surfaceRef);
+    const alive = output.includes(surfaceRef);
+    logger.debug("surface-health check:", surfaceRef, "alive:", alive);
+    return alive;
   } catch {
+    logger.debug("surface-health check failed");
     return false;
   }
 }
 
 async function waitForBrowserClose(surfaceRef: string) {
+  logger.debug("watching surface:", surfaceRef);
   while (await isSurfaceAlive(surfaceRef)) {
     await Bun.sleep(1000);
   }
-  console.log("Browser closed, shutting down.");
+  logger.info("Browser closed, shutting down.");
   process.exit(0);
 }
 
