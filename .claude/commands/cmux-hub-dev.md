@@ -17,6 +17,11 @@ bun --hot src/cli.ts --actions - <<'EOF'
     "command": "/commit"
   },
   {
+    "label": "Commit & Push",
+    "type": "paste-and-enter",
+    "command": "/commit-push"
+  },
+  {
     "label": "Create PR",
     "type": "paste-and-enter",
     "command": "/create-pr"
