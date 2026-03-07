@@ -6,6 +6,7 @@ import { PRComments } from "./components/PRComments.tsx";
 import { useDiff } from "./hooks/useDiff.ts";
 import { useWebSocket } from "./hooks/useWebSocket.ts";
 import { api } from "./lib/api.ts";
+import type { MenuItem } from "../server/actions.ts";
 import "./index.css";
 
 type Check = {
@@ -28,6 +29,7 @@ export default function App() {
   const { diff, loading, error, refresh } = useDiff();
   const [branch, setBranch] = useState("...");
   const [hasTerminal, setHasTerminal] = useState(false);
+  const [actions, setActions] = useState<MenuItem[]>([]);
   const [checks, setChecks] = useState<Check[]>([]);
   const [prComments, setPrComments] = useState<PRComment[]>([]);
 
@@ -35,6 +37,7 @@ export default function App() {
     api.getStatus().then((s) => {
       setBranch(s.branch);
       setHasTerminal(s.terminalSurface !== null);
+      if (s.actions) setActions(s.actions);
     }).catch(() => {});
   }, []);
 
@@ -56,7 +59,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#c9d1d9] flex flex-col">
-      <Toolbar branch={branch} onRefresh={refresh} hasTerminal={hasTerminal} />
+      <Toolbar branch={branch} onRefresh={refresh} hasTerminal={hasTerminal} actions={actions} />
       <div className="flex-1 overflow-auto p-4">
         <div className="flex gap-4">
           <div className="flex-1 min-w-0">

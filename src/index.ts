@@ -5,6 +5,7 @@ import { createCmuxService, createSocketConnector, createDryRunConnector } from 
 import { createGitHubService } from "../server/github.ts";
 import { createFileWatcher, defaultWatcherFactory } from "../server/watcher.ts";
 import { createAppConfig } from "../server/app.ts";
+import { DEFAULT_ACTIONS } from "../server/actions.ts";
 
 const PORT = parseInt(process.env.PORT ?? "4567", 10);
 const CWD = process.env.CMUX_HUB_CWD ?? process.cwd();
@@ -27,6 +28,7 @@ const app = createAppConfig({
   development: process.env.NODE_ENV !== "production",
   defaultSurfaceId: TERMINAL_SURFACE,
   autoShutdownMs: DRY_RUN ? undefined : 3000,
+  actions: DEFAULT_ACTIONS,
 });
 
 const server = serve({

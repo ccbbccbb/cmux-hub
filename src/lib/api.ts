@@ -46,7 +46,13 @@ export const api = {
   },
 
   getStatus() {
-    return fetchJSON<{ status: string; branch: string; cwd: string; terminalSurface: string | null }>("/api/status");
+    return fetchJSON<{
+      status: string;
+      branch: string;
+      cwd: string;
+      terminalSurface: string | null;
+      actions: import("../../server/actions.ts").MenuItem[];
+    }>("/api/status");
   },
 
   sendToTerminal(text: string, surfaceId?: string) {
@@ -100,6 +106,13 @@ export const api = {
     return fetchJSON<{ ok: boolean; command: string }>("/api/review/start", {
       method: "POST",
       body: JSON.stringify({ prompt, surfaceId }),
+    });
+  },
+
+  executeAction(id: string, variables?: Record<string, string>, surfaceId?: string) {
+    return fetchJSON<{ ok: boolean; command: string }>("/api/action", {
+      method: "POST",
+      body: JSON.stringify({ id, variables, surfaceId }),
     });
   },
 };

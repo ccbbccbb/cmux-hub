@@ -11,6 +11,8 @@ import {
 import { parseDiff } from "../src/lib/diff-parser.ts";
 import { highlightDiffFiles } from "./diff-highlight.ts";
 import { logger } from "./logger.ts";
+import type { MenuItem } from "./actions.ts";
+import { buildCommandWithEnv, findAction } from "./actions.ts";
 
 type AppDeps = {
   port: number;
@@ -23,6 +25,8 @@ type AppDeps = {
   development?: boolean;
   /** Shutdown the process when all WebSocket clients disconnect */
   autoShutdownMs?: number;
+  /** Menu actions for the toolbar */
+  actions?: MenuItem[];
   watcher?: {
     start(): void;
     onChanged(cb: () => void): void;
@@ -202,7 +206,13 @@ export function createAppConfig(deps: AppDeps) {
         try {
           const status = await git.getStatus();
           const branch = await git.getCurrentBranch();
-          return jsonResponse({ status, branch, cwd, terminalSurface: defaultSurfaceId ?? null });
+          return jsonResponse({
+            status,
+            branch,
+            cwd,
+            terminalSurface: defaultSurfaceId ?? null,
+            actions: deps.actions ?? [],
+          });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
         }
@@ -251,6 +261,61 @@ export function createAppConfig(deps: AppDeps) {
           const body = await req.json() as { command: string; surfaceId?: string };
           await cmux.sendCommand(body.command, resolveSurfaceId(body.surfaceId));
           return jsonResponse({ ok: true });
+        } catch (e) {
+          return errorResponse(e instanceof Error ? e.message : "Unknown error");
+        }
+      },
+    },
+
+    "/api/action": {
+      async POST(req: Request) {
+        const secErr = validateRequest(req, securityConfig);
+        if (secErr) return secErr;
+        try {
+          const body = await req.json() as {
+            id: string;
+            variables?: Record<string, string>;
+            surfaceId?: string;
+          };
+          const actions = deps.actions ?? [];
+          const action = findAction(actions, body.id);
+          if (!action) {
+            return errorResponse("Action not found: " + body.id, 404);
+          }
+          // Build env variables: built-in + user-provided
+          const branch = await git.getCurrentBranch().catch(() => "");
+          const diffRange = await git.computeDiffRange().catch(() => null);
+          const base = diffRange?.base ?? "";
+          const builtinVars: Record<string, string> = {
+            CMUX_HUB_CWD: cwd,
+            CMUX_HUB_GIT_BRANCH: branch,
+            CMUX_HUB_GIT_BASE: base,
+            CMUX_HUB_PORT: String(port),
+            CMUX_HUB_SURFACE_ID: defaultSurfaceId ?? "",
+          };
+          const allVars = { ...builtinVars, ...body.variables };
+          const fullCommand = buildCommandWithEnv(action.command, allVars);
+          const actionType = action.type ?? "shell";
+
+          if (actionType === "shell") {
+            // Execute directly as subshell on server
+            const proc = Bun.spawn(["sh", "-c", fullCommand], {
+              cwd,
+              stdout: "pipe",
+              stderr: "pipe",
+            });
+            const stdout = await new Response(proc.stdout).text();
+            const stderr = await new Response(proc.stderr).text();
+            const exitCode = await proc.exited;
+            return jsonResponse({ ok: exitCode === 0, command: fullCommand, stdout, stderr, exitCode });
+          } else if (actionType === "text") {
+            // Paste text to terminal without Enter
+            await cmux.sendText(fullCommand, resolveSurfaceId(body.surfaceId));
+          } else {
+            // Send command to terminal with Enter
+            await cmux.sendCommand(fullCommand, resolveSurfaceId(body.surfaceId));
+          }
+          return jsonResponse({ ok: true, command: fullCommand });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
         }

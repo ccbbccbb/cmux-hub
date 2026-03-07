@@ -8,6 +8,8 @@ import { createGitHubService } from "../server/github.ts";
 import { createFileWatcher, defaultWatcherFactory } from "../server/watcher.ts";
 import { createAppConfig } from "../server/app.ts";
 import { logger, enableDebug } from "../server/logger.ts";
+import { loadActions, DEFAULT_ACTIONS } from "../server/actions.ts";
+import type { MenuItem } from "../server/actions.ts";
 
 const CMUX_BIN = "/Applications/cmux.app/Contents/Resources/bin/cmux";
 
@@ -16,6 +18,7 @@ const { values, positionals } = parseArgs({
   options: {
     port: { type: "string", short: "p", default: process.env.PORT ?? "4567" },
     "dry-run": { type: "boolean", default: process.env.CMUX_HUB_DRY_RUN === "true" },
+    actions: { type: "string", short: "a" },
     debug: { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
@@ -28,15 +31,18 @@ if (values.help) {
 Usage: cmux-hub [options] [target_dir]
 
 Options:
-  -p, --port <port>   Server port (default: 4567)
-  --dry-run           Don't connect to cmux socket
-  --debug             Enable debug logging
-  -h, --help          Show this help
+  -p, --port <port>      Server port (default: 4567)
+  -a, --actions <file>   JSON file for toolbar actions (use - for stdin)
+  --dry-run              Don't connect to cmux socket
+  --debug                Enable debug logging
+  -h, --help             Show this help
 
 Examples:
-  cmux-hub                     # Use current directory
-  cmux-hub /path/to/project    # Specify target directory
-  cmux-hub --dry-run            # Development mode`);
+  cmux-hub                              # Use current directory
+  cmux-hub /path/to/project             # Specify target directory
+  cmux-hub --actions actions.json       # Custom toolbar actions
+  cat actions.json | cmux-hub -a -      # Read actions from stdin
+  cmux-hub --dry-run                    # Development mode`);
   process.exit(0);
 }
 
@@ -46,7 +52,40 @@ if (values.debug) {
 
 const PORT = parseInt(values.port ?? "4567", 10);
 const DRY_RUN = values["dry-run"] ?? false;
-const TERMINAL_SURFACE = process.env.CMUX_SURFACE_ID ?? undefined;
+
+// Resolve terminal surface: env var → cmux identify (focused surface)
+async function resolveTerminalSurface(): Promise<string | undefined> {
+  if (process.env.CMUX_SURFACE_ID) return process.env.CMUX_SURFACE_ID;
+  try {
+    const proc = Bun.spawn([CMUX_BIN, "--json", "identify"], { stdout: "pipe", stderr: "pipe" });
+    const output = await new Response(proc.stdout).text();
+    const exitCode = await proc.exited;
+    if (exitCode !== 0) return undefined;
+    const data = JSON.parse(output) as { focused?: { surface_ref?: string } };
+    const ref = data.focused?.surface_ref;
+    if (ref) {
+      logger.debug("auto-detected terminal surface:", ref);
+      return ref;
+    }
+  } catch {
+    // cmux not available
+  }
+  return undefined;
+}
+
+const TERMINAL_SURFACE = await resolveTerminalSurface();
+
+// Load actions
+let actions: MenuItem[] = DEFAULT_ACTIONS;
+if (values.actions) {
+  try {
+    actions = await loadActions(values.actions);
+    logger.debug("loaded", actions.length, "actions from", values.actions);
+  } catch (e) {
+    console.error("Failed to load actions:", e instanceof Error ? e.message : e);
+    process.exit(1);
+  }
+}
 
 // Determine target directory
 async function resolveTargetDir(): Promise<string> {
@@ -94,6 +133,7 @@ const app = createAppConfig({
   watcher,
   defaultSurfaceId: TERMINAL_SURFACE,
   autoShutdownMs: DRY_RUN ? undefined : 3000,
+  actions,
 });
 
 const server = serve({
