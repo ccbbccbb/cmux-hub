@@ -231,8 +231,10 @@ export function createAppConfig(deps: AppDeps) {
         const secErr = validateRequest(req, securityConfig);
         if (secErr) return secErr;
         try {
-          const branches = await git.getBranches();
-          const current = await git.getCurrentBranch();
+          const [branches, current] = await Promise.all([
+            git.getBranches(),
+            git.getCurrentBranch(),
+          ]);
           return jsonResponse({ branches, current });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
@@ -245,8 +247,10 @@ export function createAppConfig(deps: AppDeps) {
         const secErr = validateRequest(req, securityConfig);
         if (secErr) return secErr;
         try {
-          const status = await git.getStatus();
-          const branch = await git.getCurrentBranch();
+          const [status, branch] = await Promise.all([
+            git.getStatus(),
+            git.getCurrentBranch(),
+          ]);
           return jsonResponse({
             status,
             branch,

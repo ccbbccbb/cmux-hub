@@ -36,13 +36,14 @@ export function isValidOrigin(origin: string | null, config: SecurityConfig): bo
   return allowed.includes(origin);
 }
 
+const WRITE_METHODS = new Set(["POST", "PUT", "DELETE", "PATCH"]);
+
 /**
  * Check Sec-Fetch-Site for write operations (CSRF protection).
  * Only allows same-origin requests for state-changing methods.
  */
 export function isValidSecFetchSite(secFetchSite: string | null, method: string): boolean {
-  const writeMethods = ["POST", "PUT", "DELETE", "PATCH"];
-  if (!writeMethods.includes(method.toUpperCase())) return true;
+  if (!WRITE_METHODS.has(method.toUpperCase())) return true;
 
   // If the header is missing, we can't verify - allow for non-browser clients
   if (!secFetchSite) return true;
@@ -76,8 +77,7 @@ export function validateRequest(req: Request, config: SecurityConfig): Response 
 
   // Origin validation (CORS/CSRF)
   // Reject null origin on write requests (blocks file:// and sandboxed iframe attacks)
-  const writeMethods = ["POST", "PUT", "DELETE", "PATCH"];
-  if (!origin && writeMethods.includes(req.method.toUpperCase()) && secFetchSite) {
+  if (!origin && WRITE_METHODS.has(req.method.toUpperCase()) && secFetchSite) {
     return new Response("Forbidden: missing origin", { status: 403 });
   }
   if (!isValidOrigin(origin, config)) {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { serve } from "bun";
-import { parseArgs } from "util";
+import { parseArgs } from "node:util";
 import index from "./index.html";
 import { createGitService, defaultCommandRunner } from "../server/git.ts";
 import { createCmuxService, createSocketConnector, createDryRunConnector } from "../server/cmux.ts";

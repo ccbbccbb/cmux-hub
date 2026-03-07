@@ -1,4 +1,4 @@
-import { connect, type Socket } from "net";
+import { connect, type Socket } from "node:net";
 
 const DEFAULT_SOCKET_PATH = "/tmp/cmux.sock";
 

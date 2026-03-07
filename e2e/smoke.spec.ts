@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 import assert from "node:assert";
-import { writeFileSync } from "fs";
-import { join } from "path";
-import { execSync } from "child_process";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { execSync } from "node:child_process";
 
 // Resolve repo dir from the test server's /api/status endpoint
 async function getRepoDir(

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useActionState, startTransition } from "react";
+import { useState, useEffect, useCallback, useRef, useActionState, startTransition } from "react";
 import { api } from "../lib/api.ts";
 import { parseDiff, type ParsedDiff } from "../lib/diff-parser.ts";
 
@@ -20,7 +20,7 @@ export function useDiff() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [base, setBase] = useState<string | null>(null);
-  const hasFetched = useState(false);
+  const hasFetched = useRef(false);
 
   const [commitView, dispatchCommitView, isCommitLoading] = useActionState(
     async (_prev: CommitViewState, action: SelectedCommit | null): Promise<CommitViewState> => {
@@ -47,7 +47,7 @@ export function useDiff() {
 
   const fetchDiff = useCallback(async () => {
     try {
-      if (hasFetched[0]) {
+      if (hasFetched.current) {
         setRefreshing(true);
       } else {
         setLoading(true);
@@ -58,7 +58,7 @@ export function useDiff() {
       setRawDiff(result.diff);
       setDiff(result.files ?? parseDiff(result.diff));
       setBase(result.base);
-      hasFetched[0] = true;
+      hasFetched.current = true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to fetch diff");
     } finally {

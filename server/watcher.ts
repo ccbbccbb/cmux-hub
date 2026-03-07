@@ -1,5 +1,5 @@
-import { watch } from "fs";
-import { spawnSync } from "child_process";
+import { watch } from "node:fs";
+import { spawnSync } from "node:child_process";
 
 export type WatcherCallback = (event: string, filename: string | null) => void;
 export type WatcherFactory = (dir: string, callback: WatcherCallback) => { close: () => void };

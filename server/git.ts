@@ -1,3 +1,5 @@
+import path from "node:path";
+
 export type CommandRunner = (cmd: string[], options?: { cwd?: string }) => Promise<string>;
 
 export const defaultCommandRunner: CommandRunner = async (cmd, options) => {
@@ -141,40 +143,34 @@ export function createGitService(run: CommandRunner, cwd: string) {
     async getUntrackedDiff(): Promise<string> {
       const files = await this.getUntrackedFiles();
       if (files.length === 0) return "";
-      const diffs: string[] = [];
-      for (const file of files) {
-        // git diff --no-index exits 1 when files differ, so read stdout directly
-        const proc = Bun.spawn(["git", "diff", "--no-index", "--unified=3", "--", "/dev/null", file], {
-          cwd,
-          stdout: "pipe",
-          stderr: "pipe",
-        });
-        const stdout = await new Response(proc.stdout).text();
-        await proc.exited;
-        if (stdout.trim()) {
+      const diffs = await Promise.all(
+        files.map(async (file) => {
+          // git diff --no-index exits 1 when files differ, so read stdout directly
+          const proc = Bun.spawn(
+            ["git", "diff", "--no-index", "--unified=3", "--", "/dev/null", file],
+            { cwd, stdout: "pipe", stderr: "pipe" },
+          );
+          const stdout = await new Response(proc.stdout).text();
+          await proc.exited;
+          if (!stdout.trim()) return "";
           // git diff --no-index outputs paths like 1/file 2/file instead of a/ b/
-          // Rewrite to standard git diff format
-          const rewritten = stdout
+          return stdout
             .replace(/^diff --git .+$/m, `diff --git a/${file} b/${file}`)
             .replace(/^--- .+$/m, "--- /dev/null")
             .replace(/^\+\+\+ .+$/m, `+++ b/${file}`);
-          diffs.push(rewritten);
-        }
-      }
-      return diffs.join("\n");
+        }),
+      );
+      return diffs.filter(Boolean).join("\n");
     },
 
     async getFileLines(filePath: string, start: number, end: number): Promise<string[]> {
       try {
-        // Validate path is within the repository
-        const path = await import("path");
         const resolved = path.resolve(cwd, filePath);
         if (!resolved.startsWith(cwd + "/") && resolved !== cwd) {
           throw new Error("Path outside repository: " + filePath);
         }
-        const content = await run(["cat", resolved], { cwd });
+        const content = await Bun.file(resolved).text();
         const lines = content.split("\n");
-        // 1-indexed, inclusive
         return lines.slice(start - 1, end);
       } catch {
         return [];
@@ -190,8 +186,10 @@ export function createGitService(run: CommandRunner, cwd: string) {
         return { base: "--cached", includeUntracked: true };
       }
 
-      const currentBranch = await this.getCurrentBranch();
-      const defaultBranch = await this.getDefaultBranch();
+      const [currentBranch, defaultBranch] = await Promise.all([
+        this.getCurrentBranch(),
+        this.getDefaultBranch(),
+      ]);
 
       if (!defaultBranch || currentBranch === defaultBranch.replace("origin/", "")) {
         return { base: "HEAD", includeUntracked: true };

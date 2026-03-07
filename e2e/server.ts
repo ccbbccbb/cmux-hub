@@ -3,10 +3,10 @@
  * Creates a temporary dirty git repository with real git commands.
  */
 import { serve } from "bun";
-import { mkdtempSync, writeFileSync } from "fs";
-import { execSync } from "child_process";
-import { join } from "path";
-import { tmpdir } from "os";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import index from "../src/index.html";
 import { createAppConfig } from "../server/app.ts";
 import { createGitService, defaultCommandRunner } from "../server/git.ts";
