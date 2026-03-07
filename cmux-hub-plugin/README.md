@@ -6,7 +6,7 @@ Claude Code plugin that auto-launches [cmux-hub](https://github.com/azu/cmux-hub
 
 - Installs/updates the `cmux-hub` binary automatically
 - Starts cmux-hub on every Claude Code session via SessionStart hook
-- Copies default toolbar actions to `.claude/cmux-hub.json` on first run
+- Copies default toolbar actions to `~/.claude/cmux-hub.json` on first run
 
 ## Install
 
@@ -17,7 +17,7 @@ claude plugin install cmux-hub@cmux-hub-marketplace
 
 ## Customize actions
 
-Edit `.claude/cmux-hub.json` in your project to customize toolbar buttons:
+Edit `~/.claude/cmux-hub.json` (user-level) or `.claude/cmux-hub.json` (project-level, takes priority) to customize toolbar buttons:
 
 ```json
 [

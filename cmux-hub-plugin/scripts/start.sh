@@ -2,12 +2,19 @@
 set -euo pipefail
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ACTIONS=".claude/cmux-hub.json"
+USER_ACTIONS="${HOME}/.claude/cmux-hub.json"
 
-# Copy default actions if not present
-if [ ! -f "$ACTIONS" ]; then
-  mkdir -p .claude
-  cp "${PLUGIN_ROOT}/defaults/actions.json" "$ACTIONS"
+# Copy default actions to user-level config if not present
+if [ ! -f "$USER_ACTIONS" ]; then
+  mkdir -p "${HOME}/.claude"
+  cp "${PLUGIN_ROOT}/defaults/actions.json" "$USER_ACTIONS"
+fi
+
+# Project-local config takes priority over user-level config
+if [ -f ".claude/cmux-hub.json" ]; then
+  ACTIONS=".claude/cmux-hub.json"
+else
+  ACTIONS="$USER_ACTIONS"
 fi
 
 # Start cmux-hub in background so the hook returns immediately
