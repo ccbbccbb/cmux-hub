@@ -42,6 +42,12 @@ export function DiffFile({ file, onComment }: Props) {
   const [expandedLines, setExpandedLines] = useState<Map<string, DiffLineType[]>>(new Map());
   const [loadingExpand, setLoadingExpand] = useState<string | null>(null);
 
+  // Review mode: no diff coloring for new files or files with only additions
+  const isReviewMode = useMemo(() => {
+    if (file.isNew) return true;
+    return file.hunks.every(hunk => hunk.lines.every(line => line.type === "add"));
+  }, [file]);
+
   // Flatten all lines with sequential index, including expand buttons
   const flatItems = useMemo(() => {
     const items: FlatItem[] = [];
@@ -275,6 +281,7 @@ export function DiffFile({ file, onComment }: Props) {
                   <DiffLine
                     line={item.line}
                     filePath={file.newPath}
+                    reviewMode={isReviewMode}
                     selected={isSelected}
                     canComment={!!onComment}
                     onMouseDown={onComment ? () => handleMouseDown(item.index) : undefined}

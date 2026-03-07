@@ -4,6 +4,7 @@ import type { DiffLine as DiffLineType } from "../lib/diff-parser.ts";
 type Props = {
   line: DiffLineType;
   filePath: string;
+  reviewMode?: boolean;
   selected?: boolean;
   canComment?: boolean;
   onMouseDown?: () => void;
@@ -45,11 +46,17 @@ const LINE_TEXT: Record<DiffLineType["type"], string> = {
   header: "text-[#58a6ff]",
 };
 
-export function DiffLine({ line, selected, canComment, onMouseDown, onMouseEnter }: Props) {
+export function DiffLine({ line, reviewMode, selected, canComment, onMouseDown, onMouseEnter }: Props) {
   const prefix = line.type === "add" ? "+" : line.type === "delete" ? "-" : " ";
   const selectedBg = selected ? "!bg-[#264f78]" : "";
   const hasTokens = line.tokens && line.tokens.length > 0;
-  const textColor = hasTokens ? "" : LINE_TEXT[line.type];
+
+  // Review mode: neutral colors (no diff background tinting)
+  const bg = reviewMode ? "" : LINE_BG[line.type];
+  const gutterBg = reviewMode ? "bg-[#161b22]" : GUTTER_BG[line.type];
+  const gutterText = reviewMode ? "text-[#848d97]" : GUTTER_TEXT[line.type];
+  const prefixColor = reviewMode ? "text-transparent" : PREFIX_COLOR[line.type];
+  const textColor = hasTokens ? "" : (reviewMode ? "text-[#adbac7]" : LINE_TEXT[line.type]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (onMouseDown) {
@@ -59,22 +66,22 @@ export function DiffLine({ line, selected, canComment, onMouseDown, onMouseEnter
   };
 
   return (
-    <tr className={`${LINE_BG[line.type]} ${selectedBg} group font-mono text-sm leading-6`}>
+    <tr className={`${bg} ${selectedBg} group font-mono text-sm leading-6`}>
       <td
-        className={`${GUTTER_BG[line.type]} ${GUTTER_TEXT[line.type]} w-8 text-right px-1 select-none align-top text-xs ${canComment ? "cursor-pointer hover:bg-[#1f6feb]/30" : ""}`}
+        className={`${gutterBg} ${gutterText} w-8 text-right px-1 select-none align-top text-xs ${canComment ? "cursor-pointer hover:bg-[#1f6feb]/30" : ""}`}
         onMouseDown={handleMouseDown}
         onMouseEnter={onMouseEnter}
       >
         {line.oldLineNumber ?? ""}
       </td>
       <td
-        className={`${GUTTER_BG[line.type]} ${GUTTER_TEXT[line.type]} w-8 text-right px-1 select-none align-top text-xs ${canComment ? "cursor-pointer hover:bg-[#1f6feb]/30" : ""}`}
+        className={`${gutterBg} ${gutterText} w-8 text-right px-1 select-none align-top text-xs ${canComment ? "cursor-pointer hover:bg-[#1f6feb]/30" : ""}`}
         onMouseDown={handleMouseDown}
         onMouseEnter={onMouseEnter}
       >
         {line.newLineNumber ?? ""}
       </td>
-      <td className={`${PREFIX_COLOR[line.type]} w-4 text-center select-none align-top pl-2`}>
+      <td className={`${prefixColor} w-4 text-center select-none align-top pl-2`}>
         {prefix}
       </td>
       <td className={`${textColor} px-2 whitespace-pre-wrap break-all`}>
