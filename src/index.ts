@@ -27,7 +27,8 @@ const app = createAppConfig({
   watcher,
   development: process.env.NODE_ENV !== "production",
   defaultSurfaceId: TERMINAL_SURFACE,
-  autoShutdownMs: DRY_RUN ? undefined : 3000,
+  // Dev mode: no waitForBrowserClose, so use WebSocket disconnect as shutdown trigger
+  autoShutdownMs: DRY_RUN ? undefined : 5 * 60_000,
   actions: DEFAULT_ACTIONS,
 });
 

@@ -148,7 +148,8 @@ const app = createAppConfig({
   cwd: CWD,
   watcher,
   defaultSurfaceId: TERMINAL_SURFACE,
-  autoShutdownMs: DRY_RUN ? undefined : 3000,
+  // CLI mode: waitForBrowserClose handles shutdown via cmux surface polling
+  autoShutdownMs: undefined,
   actions,
 });
 
