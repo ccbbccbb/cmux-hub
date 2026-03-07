@@ -446,21 +446,14 @@ export function createAppConfig(deps: AppDeps) {
             // inherit pipe FDs, so the pipes never close even after `sh` exits.
             const SHELL_TIMEOUT_MS = 30_000;
             const PIPE_GRACE_MS = 500;
-            const timedText = (
-              stream: ReadableStream<Uint8Array>,
-              ms: number
-            ) =>
+            const timedText = (stream: ReadableStream<Uint8Array>, ms: number) =>
               Promise.race([
                 new Response(stream).text(),
-                new Promise<string>((resolve) =>
-                  setTimeout(() => resolve(""), ms)
-                ),
+                new Promise<string>((resolve) => setTimeout(() => resolve(""), ms)),
               ]);
             const exitCode = await Promise.race([
               proc.exited,
-              new Promise<-1>((resolve) =>
-                setTimeout(() => resolve(-1), SHELL_TIMEOUT_MS)
-              ),
+              new Promise<-1>((resolve) => setTimeout(() => resolve(-1), SHELL_TIMEOUT_MS)),
             ]);
             if (exitCode === -1) {
               proc.kill();
