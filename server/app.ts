@@ -142,7 +142,13 @@ export function createAppConfig(deps: AppDeps) {
         if (secErr) return secErr;
         try {
           const range = await git.computeDiffRange();
-          const raw = await git.getDiff(range.base);
+          let raw = await git.getDiff(range.base);
+          if (range.includeUntracked) {
+            const untrackedDiff = await git.getUntrackedDiff();
+            if (untrackedDiff) {
+              raw = raw ? raw + "\n" + untrackedDiff : untrackedDiff;
+            }
+          }
           const files = await highlightDiffFiles(parseDiff(raw));
           return jsonResponse({
             diff: raw,

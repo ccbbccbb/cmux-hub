@@ -138,6 +138,32 @@ export function createGitService(run: CommandRunner, cwd: string) {
       return raw.trim().split("\n").filter(Boolean);
     },
 
+    async getUntrackedDiff(): Promise<string> {
+      const files = await this.getUntrackedFiles();
+      if (files.length === 0) return "";
+      const diffs: string[] = [];
+      for (const file of files) {
+        // git diff --no-index exits 1 when files differ, so read stdout directly
+        const proc = Bun.spawn(["git", "diff", "--no-index", "--unified=3", "--", "/dev/null", file], {
+          cwd,
+          stdout: "pipe",
+          stderr: "pipe",
+        });
+        const stdout = await new Response(proc.stdout).text();
+        await proc.exited;
+        if (stdout.trim()) {
+          // git diff --no-index outputs paths like 1/file 2/file instead of a/ b/
+          // Rewrite to standard git diff format
+          const rewritten = stdout
+            .replace(/^diff --git .+$/m, `diff --git a/${file} b/${file}`)
+            .replace(/^--- .+$/m, "--- /dev/null")
+            .replace(/^\+\+\+ .+$/m, `+++ b/${file}`);
+          diffs.push(rewritten);
+        }
+      }
+      return diffs.join("\n");
+    },
+
     async getFileLines(filePath: string, start: number, end: number): Promise<string[]> {
       try {
         // Validate path is within the repository
