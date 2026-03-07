@@ -283,20 +283,25 @@ async function waitForBrowserClose(surfaceRef: string) {
   process.exit(0);
 }
 
-// bun --hot re-executes top-level code on every change.
-// Store the browser surface ref in globalThis to avoid opening a new window each time.
-const existingSurface = (globalThis as Record<string, unknown>).__cmuxHubBrowserSurface as
-  | string
-  | undefined;
-if (existingSurface) {
-  logger.debug("reusing existing browser surface:", existingSurface);
-  waitForBrowserClose(existingSurface);
+// Dev mode: skip browser split, just log the URL
+if (isDev) {
+  logger.info("Dev mode: open http://127.0.0.1:" + server.port);
 } else {
-  const browserSurface = await openBrowserSplit();
-  if (browserSurface) {
-    (globalThis as Record<string, unknown>).__cmuxHubBrowserSurface = browserSurface;
-    waitForBrowserClose(browserSurface);
+  // bun --hot re-executes top-level code on every change.
+  // Store the browser surface ref in globalThis to avoid opening a new window each time.
+  const existingSurface = (globalThis as Record<string, unknown>).__cmuxHubBrowserSurface as
+    | string
+    | undefined;
+  if (existingSurface) {
+    logger.debug("reusing existing browser surface:", existingSurface);
+    waitForBrowserClose(existingSurface);
   } else {
-    logger.info("cmux browser split not available, open http://127.0.0.1:" + server.port);
+    const browserSurface = await openBrowserSplit();
+    if (browserSurface) {
+      (globalThis as Record<string, unknown>).__cmuxHubBrowserSurface = browserSurface;
+      waitForBrowserClose(browserSurface);
+    } else {
+      logger.info("cmux browser split not available, open http://127.0.0.1:" + server.port);
+    }
   }
 }
