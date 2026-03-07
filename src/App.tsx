@@ -5,6 +5,7 @@ import { CIStatus } from "./components/CIStatus.tsx";
 import { PlanView } from "./components/PlanView.tsx";
 import { useDiff } from "./hooks/useDiff.ts";
 import { useWebSocket } from "./hooks/useWebSocket.ts";
+import { useHashRoute } from "./hooks/useHashRoute.ts";
 import { api } from "./lib/api.ts";
 import type { MenuItem } from "../server/actions.ts";
 import "./index.css";
@@ -45,6 +46,7 @@ export default function App() {
     selectCommit,
     clearCommit,
   } = useDiff();
+  const { route, navigate } = useHashRoute();
   const [branch, setBranch] = useState("...");
   const [hasTerminal, setHasTerminal] = useState(false);
   const [actions, setActions] = useState<MenuItem[]>([]);
@@ -53,8 +55,6 @@ export default function App() {
   const [prUrl, setPrUrl] = useState<string | null>(null);
   const [prTitle, setPrTitle] = useState<string | null>(null);
   const [prState, setPrState] = useState<string | null>(null);
-  const [showCommitList, setShowCommitList] = useState(false);
-  const [showPlan, setShowPlan] = useState(false);
   const [hasPlan, setHasPlan] = useState(false);
 
   const fetchPR = useCallback(() => {
@@ -137,41 +137,42 @@ export default function App() {
         onRefresh={refreshAll}
         hasTerminal={hasTerminal}
         actions={actions}
-        onShowCommitList={() => setShowCommitList(true)}
-        onShowPlan={hasPlan ? () => setShowPlan(true) : undefined}
+        onShowDiff={() => { navigate("/"); clearCommit(); }}
+        onShowCommitList={() => navigate("/commits")}
+        onShowPlan={hasPlan ? () => navigate("/plan") : undefined}
       />
       <div
         className={`flex-1 overflow-auto p-4 transition-opacity duration-200 ${refreshing ? "opacity-60" : "opacity-100"}`}
       >
-        {showPlan ? (
-          <PlanView onBack={() => setShowPlan(false)} hasTerminal={hasTerminal} />
+        {route.page === "plan" ? (
+          <PlanView onBack={() => navigate("/")} hasTerminal={hasTerminal} />
         ) : (
-        <>
-        {(checks.length > 0 || prUrl) && (
-          <div className="mb-4">
-            <CIStatus checks={checks} prTitle={prTitle} prUrl={prUrl} prState={prState} />
-          </div>
-        )}
-        <DiffView
-          diff={diff}
-          loading={loading}
-          error={error}
-          onRefresh={refreshAll}
-          hasTerminal={hasTerminal}
-          selectedCommit={selectedCommit}
-          showCommitList={showCommitList}
-          hasUncommittedChanges={hasUncommittedChanges}
-          prComments={prComments.filter((c) => !c.isResolved)}
-          onSelectCommit={(commit) => {
-            setShowCommitList(false);
-            selectCommit(commit);
-          }}
-          onClearCommit={() => {
-            setShowCommitList(false);
-            clearCommit();
-          }}
-        />
-        </>
+          <>
+            {(checks.length > 0 || prUrl) && (
+              <div className="mb-4">
+                <CIStatus checks={checks} prTitle={prTitle} prUrl={prUrl} prState={prState} />
+              </div>
+            )}
+            <DiffView
+              diff={diff}
+              loading={loading}
+              error={error}
+              onRefresh={refreshAll}
+              hasTerminal={hasTerminal}
+              selectedCommit={selectedCommit}
+              showCommitList={route.page === "commits"}
+              hasUncommittedChanges={hasUncommittedChanges}
+              prComments={prComments.filter((c) => !c.isResolved)}
+              onSelectCommit={(commit) => {
+                navigate(`/commit/${commit.hash}`);
+                selectCommit(commit);
+              }}
+              onClearCommit={() => {
+                navigate("/");
+                clearCommit();
+              }}
+            />
+          </>
         )}
       </div>
     </div>

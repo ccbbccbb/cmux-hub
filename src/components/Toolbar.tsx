@@ -12,6 +12,7 @@ type Props = {
   actions: MenuItem[];
   onShowCommitList?: () => void;
   onShowPlan?: () => void;
+  onShowDiff?: () => void;
 };
 
 function SimpleActionButton({
@@ -152,14 +153,19 @@ function InputRow({
   );
 }
 
-export function Toolbar({ branch, onRefresh, hasTerminal, actions, onShowCommitList, onShowPlan }: Props) {
+export function Toolbar({ branch, onRefresh, hasTerminal, actions, onShowCommitList, onShowPlan, onShowDiff }: Props) {
   const [sending, setSending] = useState(false);
   const [activeInput, setActiveInput] = useState<string | null>(null);
 
   return (
     <div data-testid="toolbar" className="border-b border-[#30363d] bg-[#161b22] px-4 py-2">
       <div className="flex items-center gap-3">
-        <span className="text-[#58a6ff] text-sm font-mono leading-none">{branch}</span>
+        <button
+          className="text-[#58a6ff] hover:text-[#79c0ff] text-sm font-mono leading-none"
+          onClick={onShowDiff}
+        >
+          {branch}
+        </button>
         {onShowCommitList && (
           <>
             <span className="text-[#30363d]">/</span>
