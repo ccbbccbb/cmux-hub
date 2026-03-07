@@ -2,6 +2,36 @@
 
 Diff viewer for [cmux](https://cmux.dev). Displays branch changes with syntax highlighting, inline comments, commit history browsing, and custom toolbar actions.
 
+![cmux-hub with cmux](docs/img/cmux-hub-overview.png)
+
+## Screenshots
+
+### Diff View
+
+Syntax-highlighted diff with add/delete coloring and line numbers.
+
+![Diff View](docs/img/diff-view.png)
+
+### Inline Review Comments
+
+Select lines and write review comments that are sent to the cmux terminal.
+
+![Review Comment](docs/img/review-comment.png)
+
+### Commit History
+
+Browse recent commits when no pending changes are detected.
+
+![Commit List](docs/img/commit-list.png)
+
+### Toolbar
+
+Branch name, navigation links, and custom action buttons.
+
+![Toolbar](docs/img/toolbar.png)
+
+Update screenshots: `bun run screenshots`
+
 ## Features
 
 - Diff view with syntax highlighting (Shiki)
@@ -167,6 +197,7 @@ PR data is pushed to the frontend via WebSocket every 10 seconds.
 | GET    | `/api/log?count=`                   | Recent commit log                             |
 | GET    | `/api/branches`                     | List branches and current branch              |
 | GET    | `/api/status`                       | Server status, branch, cwd, actions           |
+| GET    | `/api/plan`                         | Current session's plan file (markdown)        |
 | GET    | `/api/pr`                           | Current PR info                               |
 | GET    | `/api/pr/comments`                  | PR review comments                            |
 | GET    | `/api/ci`                           | CI check statuses                             |

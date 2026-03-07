@@ -16,7 +16,8 @@
     "fmt": "oxfmt --write .",
     "fmt:check": "oxfmt --check .",
     "typecheck": "bun run --bun tsc --noEmit",
-    "test:e2e": "bunx playwright test",
+    "test:e2e": "bunx playwright test e2e/smoke.spec.ts",
+    "screenshots": "bunx playwright test e2e/screenshots.spec.ts",
     "prepare": "git config --local core.hooksPath .githooks || echo 'Can not set git hooks'"
   },
   "dependencies": {

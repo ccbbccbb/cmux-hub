@@ -3,6 +3,8 @@
 @layer base {
   :root {
     @apply font-sans;
+    color-scheme: dark;
+    scrollbar-width: thin;
   }
 
   body {
