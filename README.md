@@ -2,6 +2,8 @@
 
 A browser-based diff viewer for [cmux](https://cmux.dev). See what changed at a glance — syntax-highlighted diffs, inline review comments, commit history, GitHub PR status, and custom toolbar actions, all streamed in real time via WebSocket.
 
+https://github.com/user-attachments/assets/f5fbfd8b-6473-4f83-882e-967a5ca33205
+
 ![cmux-hub with cmux](docs/img/cmux-hub-overview.png)
 
 ## Screenshots
@@ -299,3 +301,13 @@ bun run test:e2e  # E2E tests
 - cmux communication: Unix domain socket (`/tmp/cmux.sock`) via JSON-RPC
 - git: `Bun.spawn` with git CLI
 - GitHub: `gh` CLI
+
+## Inspired by
+
+- [Difit](https://difit.dev/)
+- [Codex](https://openai.com/codex/)
+- [Claude Code on the web](https://claude.ai/)
+
+## License
+
+MIT
