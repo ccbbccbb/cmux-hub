@@ -107,7 +107,7 @@ export async function runUpdate(): Promise<void> {
     );
   }
 
-  const binaryPath = process.argv[0];
+  const binaryPath = process.execPath;
   if (!binaryPath) {
     throw new Error("Could not determine current binary path");
   }
@@ -127,7 +127,7 @@ export async function runUpdateSafe(): Promise<void> {
     await runUpdate();
   } catch (err) {
     // Clean up tmp file on failure
-    const binaryPath = process.argv[0];
+    const binaryPath = process.execPath;
     if (binaryPath) {
       try {
         await unlink(`${binaryPath}.update-tmp`);
