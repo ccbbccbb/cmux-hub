@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun run src/cli.ts --actions .claude/cmux-hub.json > /tmp/cmux-hub.log 2>&1 &"
+            "command": "bun run dev > /tmp/cmux-hub.log 2>&1 &"
           }
         ]
       }
