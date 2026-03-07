@@ -10,6 +10,7 @@ type Props = {
   onRefresh: () => void;
   hasTerminal: boolean;
   actions: MenuItem[];
+  onShowCommitList?: () => void;
 };
 
 function SimpleActionButton({
@@ -150,14 +151,25 @@ function InputRow({
   );
 }
 
-export function Toolbar({ branch, onRefresh, hasTerminal, actions }: Props) {
+export function Toolbar({ branch, onRefresh, hasTerminal, actions, onShowCommitList }: Props) {
   const [sending, setSending] = useState(false);
   const [activeInput, setActiveInput] = useState<string | null>(null);
 
   return (
     <div data-testid="toolbar" className="border-b border-[#30363d] bg-[#161b22] px-4 py-2">
       <div className="flex items-center gap-3">
-        <span className="text-[#58a6ff] text-sm font-mono">{branch}</span>
+        <span className="text-[#58a6ff] text-sm font-mono leading-none">{branch}</span>
+        {onShowCommitList && (
+          <>
+            <span className="text-[#30363d]">/</span>
+            <button
+              className="text-[#848d97] hover:text-[#c9d1d9] text-sm leading-none"
+              onClick={onShowCommitList}
+            >
+              Commits
+            </button>
+          </>
+        )}
         <div className="flex-1" />
         <Button variant="ghost" size="sm" onClick={onRefresh}>
           Refresh

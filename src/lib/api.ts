@@ -49,7 +49,7 @@ export const api = {
   },
 
   getLog(count = 20) {
-    return fetchJSON<{ commits: Array<{ hash: string; message: string }> }>(
+    return fetchJSON<{ commits: Array<{ hash: string; message: string; relativeDate: string }> }>(
       `/api/log?count=${count}`,
     );
   },

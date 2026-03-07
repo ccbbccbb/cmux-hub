@@ -12,6 +12,8 @@ type Props = {
   onRefresh: () => void;
   hasTerminal?: boolean;
   selectedCommit?: SelectedCommit | null;
+  showCommitList?: boolean;
+  hasUncommittedChanges?: boolean;
   onSelectCommit?: (commit: SelectedCommit) => void;
   onClearCommit?: () => void;
 };
@@ -23,6 +25,8 @@ export function DiffView({
   onRefresh,
   hasTerminal = false,
   selectedCommit,
+  showCommitList,
+  hasUncommittedChanges,
   onSelectCommit,
   onClearCommit,
 }: Props) {
@@ -50,6 +54,24 @@ export function DiffView({
         <button onClick={onRefresh} className="text-blue-400 hover:text-blue-300 underline">
           Retry
         </button>
+      </div>
+    );
+  }
+
+  if (showCommitList && onSelectCommit && onClearCommit) {
+    return (
+      <div>
+        <div className="max-w-3xl mx-auto mb-3">
+          <button className="text-[#58a6ff] hover:text-[#79c0ff] text-sm" onClick={onClearCommit}>
+            ← Back to auto-diff
+          </button>
+        </div>
+        <CommitList
+          onSelectCommit={onSelectCommit}
+          showNoDiffMessage={false}
+          hasUncommittedChanges={hasUncommittedChanges}
+          onShowUncommitted={onClearCommit}
+        />
       </div>
     );
   }

@@ -111,18 +111,21 @@ export function createGitService(run: CommandRunner, cwd: string) {
       return git(["log", `--oneline`, `-${count}`]);
     },
 
-    async getLogEntries(count = 20): Promise<Array<{ hash: string; message: string }>> {
-      const raw = await git(["log", "--oneline", `-${count}`]);
+    async getLogEntries(
+      count = 20,
+    ): Promise<Array<{ hash: string; message: string; relativeDate: string }>> {
+      const raw = await git([
+        "log",
+        `--format=%h\t%s\t%cr`,
+        `-${count}`,
+      ]);
       return raw
         .trim()
         .split("\n")
         .filter(Boolean)
         .map((line) => {
-          const spaceIdx = line.indexOf(" ");
-          return {
-            hash: line.slice(0, spaceIdx),
-            message: line.slice(spaceIdx + 1),
-          };
+          const [hash, message, relativeDate] = line.split("\t");
+          return { hash, message, relativeDate };
         });
     },
 

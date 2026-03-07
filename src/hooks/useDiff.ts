@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useActionState, startTransition } fro
 import { api } from "../lib/api.ts";
 import { parseDiff, type ParsedDiff } from "../lib/diff-parser.ts";
 
-export type SelectedCommit = { hash: string; message: string };
+export type SelectedCommit = { hash: string; message: string; relativeDate: string };
 
 type CommitViewState = {
   diff: ParsedDiff;
@@ -94,6 +94,7 @@ export function useDiff() {
     error: isCommitSelected ? commitView.error : error,
     base,
     selectedCommit: commitView.commit,
+    hasUncommittedChanges: diff.length > 0,
     refresh: fetchDiff,
     selectCommit,
     clearCommit,

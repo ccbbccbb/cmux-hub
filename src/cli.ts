@@ -136,6 +136,8 @@ const app = createAppConfig({
   actions,
 });
 
+const isDev = import.meta.hot !== undefined;
+
 const server = serve({
   port: PORT,
   hostname: "127.0.0.1",
@@ -145,7 +147,10 @@ const server = serve({
   },
   websocket: app.websocket,
   fetch: app.fetch,
-  development: false,
+  development: isDev && {
+    hmr: true,
+    console: true,
+  },
 });
 
 app.setServer(server);

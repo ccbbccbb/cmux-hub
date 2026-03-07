@@ -4,9 +4,17 @@ import type { SelectedCommit } from "../hooks/useDiff.ts";
 
 type Props = {
   onSelectCommit: (commit: SelectedCommit) => void;
+  showNoDiffMessage?: boolean;
+  hasUncommittedChanges?: boolean;
+  onShowUncommitted?: () => void;
 };
 
-export function CommitList({ onSelectCommit }: Props) {
+export function CommitList({
+  onSelectCommit,
+  showNoDiffMessage = true,
+  hasUncommittedChanges,
+  onShowUncommitted,
+}: Props) {
   const [commits, setCommits] = useState<SelectedCommit[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,8 +44,19 @@ export function CommitList({ onSelectCommit }: Props) {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <p className="text-[#848d97] text-sm mb-3">No changes detected. Recent commits:</p>
+      {showNoDiffMessage && (
+        <p className="text-[#848d97] text-sm mb-3">No changes detected. Recent commits:</p>
+      )}
       <div className="border border-[#30363d] rounded-md overflow-hidden">
+        {hasUncommittedChanges && onShowUncommitted && (
+          <button
+            className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-[#161b22] border-b border-[#30363d] transition-colors bg-[#1a1500]"
+            onClick={onShowUncommitted}
+          >
+            <span className="text-[#d29922] font-mono text-xs shrink-0">●</span>
+            <span className="text-[#d29922] text-sm flex-1">Uncommitted changes</span>
+          </button>
+        )}
         {commits.map((commit) => (
           <button
             key={commit.hash}
@@ -45,7 +64,8 @@ export function CommitList({ onSelectCommit }: Props) {
             onClick={() => onSelectCommit(commit)}
           >
             <span className="text-[#58a6ff] font-mono text-xs shrink-0">{commit.hash}</span>
-            <span className="text-[#c9d1d9] text-sm truncate">{commit.message}</span>
+            <span className="text-[#c9d1d9] text-sm truncate flex-1">{commit.message}</span>
+            <span className="text-[#848d97] text-xs shrink-0">{commit.relativeDate}</span>
           </button>
         ))}
       </div>

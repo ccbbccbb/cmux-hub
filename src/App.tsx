@@ -26,13 +26,23 @@ type PRComment = {
 };
 
 export default function App() {
-  const { diff, loading, refreshing, error, refresh, selectedCommit, selectCommit, clearCommit } =
-    useDiff();
+  const {
+    diff,
+    loading,
+    refreshing,
+    error,
+    refresh,
+    selectedCommit,
+    hasUncommittedChanges,
+    selectCommit,
+    clearCommit,
+  } = useDiff();
   const [branch, setBranch] = useState("...");
   const [hasTerminal, setHasTerminal] = useState(false);
   const [actions, setActions] = useState<MenuItem[]>([]);
   const [checks, setChecks] = useState<Check[]>([]);
   const [prComments, setPrComments] = useState<PRComment[]>([]);
+  const [showCommitList, setShowCommitList] = useState(false);
 
   useEffect(() => {
     api
@@ -68,7 +78,13 @@ export default function App() {
           <div className="h-full bg-[#58a6ff] animate-progress-bar" />
         </div>
       )}
-      <Toolbar branch={branch} onRefresh={refresh} hasTerminal={hasTerminal} actions={actions} />
+      <Toolbar
+        branch={branch}
+        onRefresh={refresh}
+        hasTerminal={hasTerminal}
+        actions={actions}
+        onShowCommitList={() => setShowCommitList(true)}
+      />
       <div
         className={`flex-1 overflow-auto p-4 transition-opacity duration-200 ${refreshing ? "opacity-60" : "opacity-100"}`}
       >
@@ -81,8 +97,16 @@ export default function App() {
               onRefresh={refresh}
               hasTerminal={hasTerminal}
               selectedCommit={selectedCommit}
-              onSelectCommit={selectCommit}
-              onClearCommit={clearCommit}
+              showCommitList={showCommitList}
+              hasUncommittedChanges={hasUncommittedChanges}
+              onSelectCommit={(commit) => {
+                setShowCommitList(false);
+                selectCommit(commit);
+              }}
+              onClearCommit={() => {
+                setShowCommitList(false);
+                clearCommit();
+              }}
             />
           </div>
           {(checks.length > 0 || prComments.length > 0) && (
