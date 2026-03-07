@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { DiffView } from "./components/DiffView.tsx";
 import { Toolbar } from "./components/Toolbar.tsx";
 import { CIStatus } from "./components/CIStatus.tsx";
+import { PlanView } from "./components/PlanView.tsx";
 import { useDiff } from "./hooks/useDiff.ts";
 import { useWebSocket } from "./hooks/useWebSocket.ts";
 import { api } from "./lib/api.ts";
@@ -53,6 +54,8 @@ export default function App() {
   const [prTitle, setPrTitle] = useState<string | null>(null);
   const [prState, setPrState] = useState<string | null>(null);
   const [showCommitList, setShowCommitList] = useState(false);
+  const [showPlan, setShowPlan] = useState(false);
+  const [hasPlan, setHasPlan] = useState(false);
 
   const fetchPR = useCallback(() => {
     api
@@ -84,6 +87,7 @@ export default function App() {
         setBranch(s.branch);
         setHasTerminal(s.terminalSurface !== null);
         if (s.actions) setActions(s.actions);
+        setHasPlan(s.hasPlan);
       })
       .catch(() => {});
     fetchPR();
@@ -134,10 +138,15 @@ export default function App() {
         hasTerminal={hasTerminal}
         actions={actions}
         onShowCommitList={() => setShowCommitList(true)}
+        onShowPlan={hasPlan ? () => setShowPlan(true) : undefined}
       />
       <div
         className={`flex-1 overflow-auto p-4 transition-opacity duration-200 ${refreshing ? "opacity-60" : "opacity-100"}`}
       >
+        {showPlan ? (
+          <PlanView onBack={() => setShowPlan(false)} hasTerminal={hasTerminal} />
+        ) : (
+        <>
         {(checks.length > 0 || prUrl) && (
           <div className="mb-4">
             <CIStatus checks={checks} prTitle={prTitle} prUrl={prUrl} prState={prState} />
@@ -162,6 +171,8 @@ export default function App() {
             clearCommit();
           }}
         />
+        </>
+        )}
       </div>
     </div>
   );

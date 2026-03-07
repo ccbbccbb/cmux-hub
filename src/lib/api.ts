@@ -73,7 +73,16 @@ export const api = {
       cwd: string;
       terminalSurface: string | null;
       actions: import("../../server/actions.ts").MenuItem[];
+      hasPlan: boolean;
     }>("/api/status");
+  },
+
+  getPlan() {
+    return fetchJSON<{
+      found: boolean;
+      path?: string;
+      files?: import("./diff-parser.ts").ParsedDiff;
+    }>("/api/plan");
   },
 
   sendToTerminal(text: string, surfaceId?: string) {

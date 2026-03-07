@@ -11,6 +11,7 @@ type Props = {
   hasTerminal: boolean;
   actions: MenuItem[];
   onShowCommitList?: () => void;
+  onShowPlan?: () => void;
 };
 
 function SimpleActionButton({
@@ -151,7 +152,7 @@ function InputRow({
   );
 }
 
-export function Toolbar({ branch, onRefresh, hasTerminal, actions, onShowCommitList }: Props) {
+export function Toolbar({ branch, onRefresh, hasTerminal, actions, onShowCommitList, onShowPlan }: Props) {
   const [sending, setSending] = useState(false);
   const [activeInput, setActiveInput] = useState<string | null>(null);
 
@@ -167,6 +168,17 @@ export function Toolbar({ branch, onRefresh, hasTerminal, actions, onShowCommitL
               onClick={onShowCommitList}
             >
               Commits
+            </button>
+          </>
+        )}
+        {onShowPlan && (
+          <>
+            <span className="text-[#30363d]">/</span>
+            <button
+              className="text-[#848d97] hover:text-[#c9d1d9] text-sm leading-none"
+              onClick={onShowPlan}
+            >
+              Plan
             </button>
           </>
         )}

@@ -14,6 +14,7 @@ import { getLangFromPath, highlightLines } from "./highlighter.ts";
 import { logger } from "./logger.ts";
 import type { MenuItem } from "./actions.ts";
 import { buildCommandWithEnv, findAction } from "./actions.ts";
+import { findPlanFile } from "./plan.ts";
 
 type AppDeps = {
   port: number;
@@ -282,13 +283,66 @@ export function createAppConfig(deps: AppDeps) {
         const secErr = validateRequest(req, securityConfig);
         if (secErr) return secErr;
         try {
-          const [status, branch] = await Promise.all([git.getStatus(), git.getCurrentBranch()]);
+          const [status, branch, planPath] = await Promise.all([
+            git.getStatus(),
+            git.getCurrentBranch(),
+            findPlanFile(cwd).catch(() => null),
+          ]);
           return jsonResponse({
             status,
             branch,
             cwd,
             terminalSurface: defaultSurfaceId ?? null,
             actions: deps.actions ?? [],
+            hasPlan: planPath !== null,
+          });
+        } catch (e) {
+          return errorResponse(e instanceof Error ? e.message : "Unknown error");
+        }
+      },
+    },
+
+    "/api/plan": {
+      async GET(req: Request) {
+        const secErr = validateRequest(req, securityConfig);
+        if (secErr) return secErr;
+        try {
+          const planPath = await findPlanFile(cwd);
+          if (!planPath) {
+            return jsonResponse({ found: false });
+          }
+          const content = await Bun.file(planPath).text();
+          const lines = content.split("\n");
+          const tokenLines = await highlightLines(content, "markdown");
+          const diffLines = lines.map((line, i) => ({
+            type: "add" as const,
+            content: line,
+            oldLineNumber: null,
+            newLineNumber: i + 1,
+            tokens: tokenLines[i],
+          }));
+          return jsonResponse({
+            found: true,
+            path: planPath,
+            files: [
+              {
+                oldPath: planPath,
+                newPath: planPath,
+                hunks: [
+                  {
+                    header: "",
+                    oldStart: 0,
+                    oldCount: 0,
+                    newStart: 1,
+                    newCount: lines.length,
+                    lines: diffLines,
+                  },
+                ],
+                isNew: true,
+                isDeleted: false,
+                isRenamed: false,
+              },
+            ],
           });
         } catch (e) {
           return errorResponse(e instanceof Error ? e.message : "Unknown error");
