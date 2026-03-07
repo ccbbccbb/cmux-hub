@@ -116,11 +116,7 @@ export function createGitService(run: CommandRunner, cwd: string) {
     async getLogEntries(
       count = 20,
     ): Promise<Array<{ hash: string; message: string; relativeDate: string }>> {
-      const raw = await git([
-        "log",
-        `--format=%h\t%s\t%cr`,
-        `-${count}`,
-      ]);
+      const raw = await git(["log", `--format=%h\t%s\t%cr`, `-${count}`]);
       return raw
         .trim()
         .split("\n")
