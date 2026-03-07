@@ -18,5 +18,7 @@ else
 fi
 
 # Start cmux-hub in background so the hook returns immediately
+# Redirect stdout/stderr so the hook runner doesn't wait for EOF
 CMUX_HUB="${HOME}/.local/bin/cmux-hub"
-"$CMUX_HUB" --actions "$ACTIONS" &
+"$CMUX_HUB" --actions "$ACTIONS" >/dev/null 2>&1 &
+disown
