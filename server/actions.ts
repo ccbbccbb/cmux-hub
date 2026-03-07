@@ -1,8 +1,8 @@
 export type ActionItem = {
   label: string;
   command: string;
-  /** "shell" executes as subshell on server (default), "terminal" sends to cmux terminal with Enter, "text" pastes to terminal without Enter */
-  type?: "shell" | "terminal" | "text";
+  /** "paste-and-enter" pastes to cmux terminal with Enter, "shell" executes as subshell on server, "paste" pastes without Enter */
+  type: "paste-and-enter" | "shell" | "paste";
   input?: {
     placeholder: string;
     variable: string;
@@ -39,7 +39,7 @@ export const DEFAULT_ACTIONS: MenuItem[] = [
   },
   {
     label: "AI Review",
-    type: "terminal",
+    type: "paste-and-enter",
     command: 'claude "このPRの変更をレビューしてください" --allowedTools bash',
   },
 ];
@@ -86,6 +86,62 @@ export function findAction(actions: MenuItem[], id: string): ActionItem | null {
   return null;
 }
 
+const VALID_TYPES = new Set(["shell", "paste-and-enter", "paste"]);
+
+function validateActionItem(item: unknown, path: string): ActionItem {
+  if (typeof item !== "object" || item === null) {
+    throw new Error(`${path}: must be an object`);
+  }
+  const obj = item as Record<string, unknown>;
+  if (typeof obj.label !== "string" || !obj.label) {
+    throw new Error(`${path}: "label" is required (string)`);
+  }
+  if (typeof obj.command !== "string" || !obj.command) {
+    throw new Error(`${path}: "command" is required (string)`);
+  }
+  if (!VALID_TYPES.has(obj.type as string)) {
+    throw new Error(`${path}: "type" must be one of: shell, paste-and-enter, paste (got ${JSON.stringify(obj.type)})`);
+  }
+  if (obj.input !== undefined) {
+    if (typeof obj.input !== "object" || obj.input === null) {
+      throw new Error(`${path}.input: must be an object`);
+    }
+    const input = obj.input as Record<string, unknown>;
+    if (typeof input.placeholder !== "string") {
+      throw new Error(`${path}.input: "placeholder" is required (string)`);
+    }
+    if (typeof input.variable !== "string" || !input.variable) {
+      throw new Error(`${path}.input: "variable" is required (string)`);
+    }
+  }
+  return item as ActionItem;
+}
+
+function validateMenuItem(item: unknown, index: number): MenuItem {
+  if (typeof item !== "object" || item === null) {
+    throw new Error(`actions[${index}]: must be an object`);
+  }
+  const obj = item as Record<string, unknown>;
+  if ("submenu" in obj) {
+    if (typeof obj.label !== "string" || !obj.label) {
+      throw new Error(`actions[${index}]: "label" is required (string)`);
+    }
+    if (!Array.isArray(obj.submenu)) {
+      throw new Error(`actions[${index}]: "submenu" must be an array`);
+    }
+    obj.submenu.forEach((sub, i) => validateActionItem(sub, `actions[${index}].submenu[${i}]`));
+    return item as SubmenuItem;
+  }
+  return validateActionItem(item, `actions[${index}]`);
+}
+
+export function validateActions(data: unknown): MenuItem[] {
+  if (!Array.isArray(data)) {
+    throw new Error("actions must be an array");
+  }
+  return data.map((item, i) => validateMenuItem(item, i));
+}
+
 export async function loadActions(source: string): Promise<MenuItem[]> {
   let json: string;
   if (source === "-") {
@@ -97,5 +153,5 @@ export async function loadActions(source: string): Promise<MenuItem[]> {
     }
     json = await file.text();
   }
-  return JSON.parse(json) as MenuItem[];
+  return validateActions(JSON.parse(json));
 }

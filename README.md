@@ -76,7 +76,7 @@ Without it, the default Commit / Create PR / AI Review actions are shown.
   },
   {
     "label": "AI Review",
-    "type": "terminal",
+    "type": "paste-and-enter",
     "command": "claude \"Review this PR\" --allowedTools bash"
   },
   {
@@ -95,7 +95,7 @@ Without it, the default Commit / Create PR / AI Review actions are shown.
 |-------|------|-------------|
 | `label` | `string` | Button label |
 | `command` | `string` | Command to execute |
-| `type` | `"shell" \| "terminal" \| "text"` | Execution mode (see below). Default: `"shell"` |
+| `type` | `"paste-and-enter" \| "shell" \| "paste"` | Execution mode (see below). Default: `"paste-and-enter"` |
 | `input` | `{ placeholder, variable }` | Shows an input form before executing |
 | `submenu` | `ActionItem[]` | Nested menu (instead of `command`) |
 
@@ -104,8 +104,8 @@ Without it, the default Commit / Create PR / AI Review actions are shown.
 | type | Behavior | Use case |
 |------|----------|----------|
 | `"shell"` | Executes as a subshell on the server. Returns stdout/stderr/exitCode | `git commit`, `gh pr create` |
-| `"terminal"` | Sends command to cmux terminal (with Enter) | Commands for Claude Code or other terminal processes |
-| `"text"` | Sends text to cmux terminal (without Enter) | Paste text only |
+| `"paste-and-enter"` | Pastes text to cmux terminal and sends Enter | Commands for Claude Code or other terminal processes |
+| `"paste"` | Pastes text to cmux terminal without Enter | Paste text only |
 
 ### Variables
 

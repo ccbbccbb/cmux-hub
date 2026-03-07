@@ -282,7 +282,7 @@ export function createAppConfig(deps: AppDeps) {
           if (!action) {
             return errorResponse("Action not found: " + body.id, 404);
           }
-          const actionType = action.type ?? "shell";
+          const actionType = action.type;
 
           if (actionType === "shell") {
             // Build env variables: built-in + user-provided (only for shell type)
@@ -309,11 +309,11 @@ export function createAppConfig(deps: AppDeps) {
             const exitCode = await proc.exited;
             return jsonResponse({ ok: exitCode === 0, command: fullCommand, stdout, stderr, exitCode });
           }
-          // For terminal/text: only user-provided variables
+          // For paste/paste-and-enter: only user-provided variables
           const termCommand = body.variables
             ? buildCommandWithEnv(action.command, body.variables)
             : action.command;
-          if (actionType === "text") {
+          if (actionType === "paste") {
             await cmux.sendText(termCommand, resolveSurfaceId(body.surfaceId));
           } else {
             await cmux.sendCommand(termCommand, resolveSurfaceId(body.surfaceId));

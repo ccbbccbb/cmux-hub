@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { shellEscape, buildCommandWithEnv, isSubmenu, findAction } from "../actions.ts";
+import { shellEscape, buildCommandWithEnv, isSubmenu, findAction, validateActions } from "../actions.ts";
 import type { MenuItem } from "../actions.ts";
 
 describe("shellEscape", () => {
@@ -58,14 +58,14 @@ describe("buildCommandWithEnv", () => {
 
 describe("isSubmenu", () => {
   test("action item", () => {
-    const item: MenuItem = { label: "Commit", command: "git commit" };
+    const item: MenuItem = { label: "Commit", type: "shell", command: "git commit" };
     expect(isSubmenu(item)).toBe(false);
   });
 
   test("submenu item", () => {
     const item: MenuItem = {
       label: "More",
-      submenu: [{ label: "Amend", command: "git commit --amend" }],
+      submenu: [{ label: "Amend", type: "shell", command: "git commit --amend" }],
     };
     expect(isSubmenu(item)).toBe(true);
   });
@@ -73,25 +73,25 @@ describe("isSubmenu", () => {
 
 describe("findAction", () => {
   const actions: MenuItem[] = [
-    { label: "Commit", command: "git commit" },
-    { label: "PR", command: "gh pr create" },
+    { label: "Commit", type: "shell", command: "git commit" },
+    { label: "PR", type: "shell", command: "gh pr create" },
     {
       label: "More",
       submenu: [
-        { label: "Amend", command: "git commit --amend" },
-        { label: "Stash", command: "git stash" },
+        { label: "Amend", type: "shell", command: "git commit --amend" },
+        { label: "Stash", type: "shell", command: "git stash" },
       ],
     },
   ];
 
   test("top-level action by index", () => {
-    expect(findAction(actions, "0")).toEqual({ label: "Commit", command: "git commit" });
-    expect(findAction(actions, "1")).toEqual({ label: "PR", command: "gh pr create" });
+    expect(findAction(actions, "0")).toEqual({ label: "Commit", type: "shell", command: "git commit" });
+    expect(findAction(actions, "1")).toEqual({ label: "PR", type: "shell", command: "gh pr create" });
   });
 
   test("submenu action by index path", () => {
-    expect(findAction(actions, "2.0")).toEqual({ label: "Amend", command: "git commit --amend" });
-    expect(findAction(actions, "2.1")).toEqual({ label: "Stash", command: "git stash" });
+    expect(findAction(actions, "2.0")).toEqual({ label: "Amend", type: "shell", command: "git commit --amend" });
+    expect(findAction(actions, "2.1")).toEqual({ label: "Stash", type: "shell", command: "git stash" });
   });
 
   test("returns null for submenu itself", () => {
@@ -107,5 +107,58 @@ describe("findAction", () => {
   test("returns null for invalid id", () => {
     expect(findAction(actions, "abc")).toBeNull();
     expect(findAction(actions, "")).toBeNull();
+  });
+});
+
+describe("validateActions", () => {
+  test("valid actions", () => {
+    const data = [
+      { label: "Commit", type: "shell", command: "git commit" },
+      { label: "Review", type: "paste-and-enter", command: "claude review" },
+      { label: "Paste", type: "paste", command: "echo hi" },
+    ];
+    expect(validateActions(data)).toEqual(data);
+  });
+
+  test("valid submenu", () => {
+    const data = [
+      { label: "More", submenu: [{ label: "Amend", type: "shell", command: "git commit --amend" }] },
+    ];
+    expect(validateActions(data)).toEqual(data);
+  });
+
+  test("valid action with input", () => {
+    const data = [
+      { label: "Commit", type: "shell", command: "git commit -m \"$MSG\"", input: { placeholder: "Message...", variable: "MSG" } },
+    ];
+    expect(validateActions(data)).toEqual(data);
+  });
+
+  test("rejects non-array", () => {
+    expect(() => validateActions("not array")).toThrow("actions must be an array");
+  });
+
+  test("rejects missing label", () => {
+    expect(() => validateActions([{ type: "shell", command: "echo" }])).toThrow('"label" is required');
+  });
+
+  test("rejects missing command", () => {
+    expect(() => validateActions([{ label: "Test", type: "shell" }])).toThrow('"command" is required');
+  });
+
+  test("rejects missing type", () => {
+    expect(() => validateActions([{ label: "Test", command: "echo" }])).toThrow('"type" must be one of');
+  });
+
+  test("rejects invalid type", () => {
+    expect(() => validateActions([{ label: "Test", type: "invalid", command: "echo" }])).toThrow('"type" must be one of');
+  });
+
+  test("rejects invalid input", () => {
+    expect(() => validateActions([{ label: "Test", type: "shell", command: "echo", input: { placeholder: "p" } }])).toThrow('"variable" is required');
+  });
+
+  test("rejects invalid submenu item", () => {
+    expect(() => validateActions([{ label: "More", submenu: [{ label: "Sub" }] }])).toThrow('"command" is required');
   });
 });
