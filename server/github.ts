@@ -57,88 +57,84 @@ export function createGitHubService(run: CommandRunner, cwd: string) {
     },
 
     async getPRComments(prNumber: number): Promise<PRComment[]> {
-      try {
-        const query = `query($number: Int!) {
-          repository(owner: "{owner}", name: "{repo}") {
-            pullRequest(number: $number) {
-              reviewThreads(first: 100) {
-                nodes {
-                  isResolved
-                  comments(first: 100) {
-                    nodes {
-                      databaseId
-                      body
-                      author { login }
-                      path
-                      line
-                      createdAt
-                      updatedAt
-                    }
+      const query = `query($number: Int!) {
+        repository(owner: "{owner}", name: "{repo}") {
+          pullRequest(number: $number) {
+            reviewThreads(first: 100) {
+              nodes {
+                isResolved
+                comments(first: 100) {
+                  nodes {
+                    databaseId
+                    body
+                    author { login }
+                    path
+                    line
+                    createdAt
+                    updatedAt
                   }
                 }
               }
             }
           }
-        }`;
-        // Resolve {owner}/{repo} via gh repo view
-        const repoRaw = await gh(["repo", "view", "--json", "owner,name"]);
-        const repo = JSON.parse(repoRaw) as { owner: { login: string }; name: string };
-        const resolvedQuery = query
-          .replace("{owner}", repo.owner.login)
-          .replace("{repo}", repo.name);
+        }
+      }`;
+      // Resolve {owner}/{repo} via gh repo view
+      const repoRaw = await gh(["repo", "view", "--json", "owner,name"]);
+      const repo = JSON.parse(repoRaw) as { owner: { login: string }; name: string };
+      const resolvedQuery = query
+        .replace("{owner}", repo.owner.login)
+        .replace("{repo}", repo.name);
 
-        const raw = await gh([
-          "api",
-          "graphql",
-          "-f",
-          `query=${resolvedQuery}`,
-          "-F",
-          `number=${prNumber}`,
-        ]);
-        const data = JSON.parse(raw) as {
-          data: {
-            repository: {
-              pullRequest: {
-                reviewThreads: {
-                  nodes: Array<{
-                    isResolved: boolean;
-                    comments: {
-                      nodes: Array<{
-                        databaseId: number;
-                        body: string;
-                        author: { login: string };
-                        path: string;
-                        line: number;
-                        createdAt: string;
-                        updatedAt: string;
-                      }>;
-                    };
-                  }>;
-                };
+      const raw = await gh([
+        "api",
+        "graphql",
+        "-f",
+        `query=${resolvedQuery}`,
+        "-F",
+        `number=${prNumber}`,
+      ]);
+      const data = JSON.parse(raw) as {
+        data: {
+          repository: {
+            pullRequest: {
+              reviewThreads: {
+                nodes: Array<{
+                  isResolved: boolean;
+                  comments: {
+                    nodes: Array<{
+                      databaseId: number;
+                      body: string;
+                      author: { login: string };
+                      path: string;
+                      line: number;
+                      createdAt: string;
+                      updatedAt: string;
+                    }>;
+                  };
+                }>;
               };
             };
           };
         };
-        const threads = data.data.repository.pullRequest.reviewThreads.nodes;
-        const comments: PRComment[] = [];
-        for (const thread of threads) {
-          for (const c of thread.comments.nodes) {
-            comments.push({
-              id: c.databaseId,
-              body: c.body,
-              user: c.author.login,
-              path: c.path,
-              line: c.line,
-              createdAt: c.createdAt,
-              updatedAt: c.updatedAt,
-              isResolved: thread.isResolved,
-            });
-          }
+      };
+      const threads = data.data.repository.pullRequest.reviewThreads.nodes;
+      const comments: PRComment[] = [];
+      for (const thread of threads) {
+        for (const c of thread.comments.nodes) {
+          comments.push({
+            id: c.databaseId,
+            body: c.body,
+            user: c.author.login,
+            path: c.path,
+            line: c.line,
+            createdAt: c.createdAt,
+            updatedAt: c.updatedAt,
+            isResolved: thread.isResolved,
+          });
         }
-        return comments;
-      } catch {
-        return [];
       }
+      return comments;
     },
 
     async getPRReviewComments(prNumber: number): Promise<PRComment[]> {
@@ -161,24 +157,22 @@ export function createGitHubService(run: CommandRunner, cwd: string) {
     },
 
     async getCIChecks({ prNumber }: { prNumber: number }): Promise<CICheck[]> {
-      try {
-        const repoRaw = await gh(["repo", "view", "--json", "owner,name"]);
-        const repo = JSON.parse(repoRaw) as { owner: { login: string }; name: string };
-        const query = `query($owner: String!, $name: String!, $number: Int!) {
-          repository(owner: $owner, name: $name) {
-            pullRequest(number: $number) {
-              commits(last: 1) {
-                nodes {
-                  commit {
-                    statusCheckRollup {
-                      contexts(first: 100) {
-                        nodes {
-                          ... on CheckRun {
-                            name
-                            status
-                            conclusion
-                            detailsUrl
-                          }
+      const repoRaw = await gh(["repo", "view", "--json", "owner,name"]);
+      const repo = JSON.parse(repoRaw) as { owner: { login: string }; name: string };
+      const query = `query($owner: String!, $name: String!, $number: Int!) {
+        repository(owner: $owner, name: $name) {
+          pullRequest(number: $number) {
+            commits(last: 1) {
+              nodes {
+                commit {
+                  statusCheckRollup {
+                    contexts(first: 100) {
+                      nodes {
+                        ... on CheckRun {
+                          name
+                          status
+                          conclusion
+                          detailsUrl
                         }
                       }
                     }
@@ -187,34 +181,32 @@ export function createGitHubService(run: CommandRunner, cwd: string) {
               }
             }
           }
-        }`;
-        const raw = await gh([
-          "api",
-          "graphql",
-          "-f",
-          `query=${query}`,
-          "-F",
-          `owner=${repo.owner.login}`,
-          "-F",
-          `name=${repo.name}`,
-          "-F",
-          `number=${prNumber}`,
-        ]);
-        const data = JSON.parse(raw);
-        const nodes =
-          data.data.repository.pullRequest.commits.nodes[0]?.commit?.statusCheckRollup?.contexts
-            ?.nodes ?? [];
-        return nodes
-          .filter((n: Record<string, string>) => n.name)
-          .map((n: Record<string, string>) => ({
-            name: n.name,
-            status: n.status,
-            conclusion: n.conclusion ?? "",
-            url: n.detailsUrl ?? "",
-          }));
-      } catch {
-        return [];
-      }
+        }
+      }`;
+      const raw = await gh([
+        "api",
+        "graphql",
+        "-f",
+        `query=${query}`,
+        "-F",
+        `owner=${repo.owner.login}`,
+        "-F",
+        `name=${repo.name}`,
+        "-F",
+        `number=${prNumber}`,
+      ]);
+      const data = JSON.parse(raw);
+      const nodes =
+        data.data.repository.pullRequest.commits.nodes[0]?.commit?.statusCheckRollup?.contexts
+          ?.nodes ?? [];
+      return nodes
+        .filter((n: Record<string, string>) => n.name)
+        .map((n: Record<string, string>) => ({
+          name: n.name,
+          status: n.status,
+          conclusion: n.conclusion ?? "",
+          url: n.detailsUrl ?? "",
+        }));
     },
   };
 }

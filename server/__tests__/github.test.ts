@@ -90,13 +90,12 @@ describe("createGitHubService", () => {
     ]);
   });
 
-  test("getCIChecks returns empty on error", async () => {
+  test("getCIChecks throws on error", async () => {
     const runner: CommandRunner = async () => {
       throw new Error("no checks");
     };
     const gh = createGitHubService(runner, "/tmp/test");
-    const checks = await gh.getCIChecks({ prNumber: 1 });
-    expect(checks).toEqual([]);
+    await expect(gh.getCIChecks({ prNumber: 1 })).rejects.toThrow("no checks");
   });
 
   test("passes cwd to command runner", async () => {
