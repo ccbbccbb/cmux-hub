@@ -7,7 +7,6 @@ import { isSubmenu, isActionWithInput } from "../../server/actions.ts";
 
 type Props = {
   branch: string;
-  onRefresh: () => void;
   hasTerminal: boolean;
   actions: MenuItem[];
   onShowCommitList?: () => void;
@@ -155,7 +154,6 @@ function InputRow({
 
 export function Toolbar({
   branch,
-  onRefresh,
   hasTerminal,
   actions,
   onShowCommitList,

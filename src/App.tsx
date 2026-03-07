@@ -134,7 +134,6 @@ export default function App() {
       )}
       <Toolbar
         branch={branch}
-        onRefresh={refreshAll}
         hasTerminal={hasTerminal}
         actions={actions}
         onShowDiff={() => {
