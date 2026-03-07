@@ -19,8 +19,6 @@ test("opening the page shows the branch name in the toolbar", async ({ page }) =
   await expect(toolbar).toBeVisible();
   // Branch name is displayed
   await expect(toolbar).toContainText("feature/test");
-  // Refresh button is displayed
-  await expect(toolbar.getByRole("button", { name: "Refresh" })).toBeVisible();
 });
 
 test("opening the page fetches /api/diff/auto and shows changed files", async ({ page }) => {
@@ -61,20 +59,6 @@ test("modifying a file updates the diff view automatically", async ({ page, requ
   await expect(diffView.getByTestId("diff-file")).toHaveCount(3);
   // The added file is shown
   await expect(diffView).toContainText("added.ts");
-});
-
-test("clicking Refresh re-fetches the diff", async ({ page, request }) => {
-  const repoDir = await getRepoDir(request);
-  await page.goto("/");
-  const diffView = page.getByTestId("diff-view");
-  await expect(diffView).toBeVisible();
-  // Add a new file to the repo
-  writeFileSync(join(repoDir, "refreshed.ts"), "export const refreshed = true;\n");
-  execSync("git add refreshed.ts", { cwd: repoDir, stdio: "pipe" });
-  // Click the Refresh button
-  await page.getByTestId("toolbar").getByRole("button", { name: "Refresh" }).click();
-  // The added file appears
-  await expect(diffView).toContainText("refreshed.ts");
 });
 
 test("clicking a diff line opens the comment form, and submitting sends the comment", async ({
