@@ -6,6 +6,11 @@ if [ "${CMUX_HUB_SKIP:-}" = "1" ]; then
   exit 0
 fi
 
+# Skip when launched from Claude Desktop (no terminal/cmux available)
+if [ "${CLAUDE_CODE_ENTRYPOINT:-}" = "claude-desktop" ]; then
+  exit 0
+fi
+
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 USER_ACTIONS="${HOME}/.claude/cmux-hub.json"
 
