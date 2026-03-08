@@ -28,6 +28,8 @@ export function useWebSocket(onMessage: (msg: WSMessage) => void) {
       try {
         const msg = JSON.parse(event.data as string) as WSMessage;
         onMessageRef.current(msg);
+        // Dispatch as custom event so other hooks can subscribe
+        window.dispatchEvent(new CustomEvent("ws-message", { detail: msg }));
       } catch {
         // ignore parse errors
       }

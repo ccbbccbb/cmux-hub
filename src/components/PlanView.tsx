@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback } from "react";
 import { DiffFile } from "./DiffFile.tsx";
 import { api } from "../lib/api.ts";
-import type { ParsedDiff } from "../lib/diff-parser.ts";
+import { usePlanData } from "../hooks/usePlanData.ts";
 
 type Props = {
   onBack: () => void;
@@ -9,10 +9,7 @@ type Props = {
 };
 
 export function PlanView({ onBack, hasTerminal = false }: Props) {
-  const [files, setFiles] = useState<ParsedDiff>([]);
-  const [planPath, setPlanPath] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { files, planPath, loading, error } = usePlanData();
 
   const handleComment = useCallback(
     async (file: string, startLine: number, endLine: number, comment: string) => {
@@ -24,21 +21,6 @@ export function PlanView({ onBack, hasTerminal = false }: Props) {
     },
     [],
   );
-
-  useEffect(() => {
-    api
-      .getPlan()
-      .then((res) => {
-        if (res.found && res.files) {
-          setFiles(res.files);
-          setPlanPath(res.path ?? null);
-        } else {
-          setError("Plan file not found");
-        }
-      })
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load plan"))
-      .finally(() => setLoading(false));
-  }, []);
 
   if (loading) {
     return (

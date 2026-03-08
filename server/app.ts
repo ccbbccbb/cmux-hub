@@ -15,6 +15,7 @@ import { logger } from "./logger.ts";
 import type { MenuItem } from "./actions.ts";
 import { buildCommandWithEnv, findAction } from "./actions.ts";
 import { findPlanFile } from "./plan.ts";
+import { createPlanWatcher } from "./plan-watcher.ts";
 
 type AppDeps = {
   port: number;
@@ -52,6 +53,7 @@ export function createAppConfig(deps: AppDeps) {
 
   // Map<ws, lastPongTimestamp>
   const wsClients = new Map<ServerWebSocket<unknown>, number>();
+  let planWatcherInstance: ReturnType<typeof createPlanWatcher> | null = null;
   let hasHadClients = false;
   let shutdownTimer: ReturnType<typeof setTimeout> | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -618,6 +620,14 @@ export function createAppConfig(deps: AppDeps) {
           }
         });
       }
+
+      const broadcast = (message: string) => {
+        for (const ws of wsClients.keys()) {
+          ws.send(message);
+        }
+      };
+      planWatcherInstance = createPlanWatcher(cwd, broadcast);
+      planWatcherInstance.start();
     },
 
     /** Fetch GitHub data once (for tests or initial load) */
@@ -629,6 +639,8 @@ export function createAppConfig(deps: AppDeps) {
         pollTimer = null;
       }
       deps.watcher?.stop();
+      planWatcherInstance?.stop();
+      planWatcherInstance = null;
     },
   };
 }

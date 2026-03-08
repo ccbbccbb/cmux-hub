@@ -107,6 +107,12 @@ export default function App() {
       if (msg.type === "diff-updated") {
         refreshAll();
       }
+      if (msg.type === "plan-updated") {
+        api
+          .getStatus()
+          .then((s) => setHasPlan(s.hasPlan))
+          .catch((e) => console.error(new Error("Failed to fetch plan status", { cause: e })));
+      }
       if (msg.type === "pr-updated" && msg.data) {
         const data = msg.data as {
           pr?: PR;
