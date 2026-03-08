@@ -11,6 +11,12 @@ if [ "${CLAUDE_CODE_ENTRYPOINT:-}" = "claude-desktop" ]; then
   exit 0
 fi
 
+# Skip when not running inside cmux (e.g. claude -p, iterm, alfred)
+# CMUX_SURFACE_ID is auto-set by cmux for each surface (see https://cmux.dev/docs/api)
+if [ -z "${CMUX_SURFACE_ID:-}" ]; then
+  exit 0
+fi
+
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 USER_ACTIONS="${HOME}/.claude/cmux-hub.json"
 
