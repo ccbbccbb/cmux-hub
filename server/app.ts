@@ -439,8 +439,10 @@ export function createAppConfig(deps: AppDeps) {
             };
             const allVars = { ...builtinVars, ...body.variables };
             const fullCommand = buildCommandWithEnv(action.command, allVars);
+            logger.debug("shell action:", action.label, "command:", fullCommand);
             // Execute directly as subshell on server
-            const proc = Bun.spawn(["sh", "-c", fullCommand], {
+            const shell = process.env.SHELL || "sh";
+            const proc = Bun.spawn([shell, "-c", fullCommand], {
               cwd,
               stdout: "pipe",
               stderr: "pipe",
@@ -467,6 +469,7 @@ export function createAppConfig(deps: AppDeps) {
               timedText(proc.stdout, PIPE_GRACE_MS),
               timedText(proc.stderr, PIPE_GRACE_MS),
             ]);
+            logger.debug("shell action result:", { exitCode, stdout, stderr });
             return jsonResponse({
               ok: exitCode === 0,
               command: fullCommand,

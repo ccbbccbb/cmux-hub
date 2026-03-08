@@ -1,6 +1,7 @@
 {
   "env": {
-    "CMUX_HUB_SKIP": "1"
+    "CMUX_HUB_SKIP": "1",
+    "CMUX_HUB_DEBUG": "1"
   },
   "hooks": {
     "SessionStart": [
@@ -8,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun run dev > /tmp/cmux-hub.log 2>&1 &"
+            "command": "CMUX_HUB_DEBUG=1 bun run dev > /tmp/cmux-hub.log 2>&1 &"
           }
         ]
       }

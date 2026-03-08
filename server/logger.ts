@@ -1,4 +1,4 @@
-let debugEnabled = !!process.env.DEBUG;
+let debugEnabled = !!process.env.CMUX_HUB_DEBUG;
 
 export function enableDebug() {
   debugEnabled = true;
