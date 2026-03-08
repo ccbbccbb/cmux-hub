@@ -164,10 +164,7 @@ export function Toolbar({
   const [activeInput, setActiveInput] = useState<string | null>(null);
 
   return (
-    <div
-      data-testid="toolbar"
-      className="border-b border-[#30363d] bg-[#161b22] px-4 py-2"
-    >
+    <div data-testid="toolbar" className="border-b border-[#30363d] bg-[#161b22] px-4 py-2">
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex items-center gap-1">
           <button

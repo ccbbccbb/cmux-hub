@@ -23,6 +23,7 @@ type AppDeps = {
   github: GitHubService;
   cwd: string;
   defaultSurfaceId?: string;
+  browserSurfaceId?: string;
   /** When true, return undefined from fetch for unmatched routes (needed for Bun dev server asset serving) */
   development?: boolean;
   /** Shutdown the process when all WebSocket clients disconnect */
@@ -42,7 +43,7 @@ type AppDeps = {
  * so that Bun's HTML bundler resolves asset paths correctly.
  */
 export function createAppConfig(deps: AppDeps) {
-  const { port, git, cmux, github, cwd, defaultSurfaceId } = deps;
+  const { port, git, cmux, github, cwd, defaultSurfaceId, browserSurfaceId } = deps;
   const securityConfig = { port };
 
   function resolveSurfaceId(surfaceId?: string): string | undefined {
@@ -432,6 +433,7 @@ export function createAppConfig(deps: AppDeps) {
               CMUX_HUB_GIT_BASE: base,
               CMUX_HUB_PORT: String(securityConfig.port),
               CMUX_HUB_SURFACE_ID: defaultSurfaceId ?? "",
+              CMUX_HUB_BROWSER_SURFACE_ID: browserSurfaceId ?? "",
             };
             const allVars = { ...builtinVars, ...body.variables };
             const fullCommand = buildCommandWithEnv(action.command, allVars);

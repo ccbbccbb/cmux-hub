@@ -180,7 +180,7 @@ const cmux = createCmuxService(connector);
 const github = createGitHubService(defaultCommandRunner, CWD);
 const watcher = createFileWatcher(defaultWatcherFactory, CWD);
 
-const app = createAppConfig({
+const appDeps: Parameters<typeof createAppConfig>[0] = {
   port: PORT,
   git,
   cmux,
@@ -191,7 +191,8 @@ const app = createAppConfig({
   // CLI mode: waitForBrowserClose handles shutdown via cmux surface polling
   autoShutdownMs: undefined,
   actions,
-});
+};
+const app = createAppConfig(appDeps);
 
 // Detect dev mode: compiled binary sets Bun.main differently
 const isDev = !process.execPath.includes("cmux-hub");
@@ -294,11 +295,13 @@ if (isDev) {
     | undefined;
   if (existingSurface) {
     logger.debug("reusing existing browser surface:", existingSurface);
+    appDeps.browserSurfaceId = existingSurface;
     waitForBrowserClose(existingSurface);
   } else {
     const browserSurface = await openBrowserSplit();
     if (browserSurface) {
       (globalThis as Record<string, unknown>).__cmuxHubBrowserSurface = browserSurface;
+      appDeps.browserSurfaceId = browserSurface;
       waitForBrowserClose(browserSurface);
     } else {
       logger.info("cmux browser split not available, open http://127.0.0.1:" + server.port);
