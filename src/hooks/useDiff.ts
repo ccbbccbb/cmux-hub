@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useActionState, startTransition } from "react";
+import { useState, useEffect, useCallback, useActionState, useTransition, startTransition } from "react";
 import { api } from "../lib/api.ts";
 import { parseDiff, type ParsedDiff } from "../lib/diff-parser.ts";
 
@@ -17,10 +17,9 @@ export function useDiff() {
   const [diff, setDiff] = useState<ParsedDiff>([]);
   const [rawDiff, setRawDiff] = useState("");
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [base, setBase] = useState<string | null>(null);
-  const hasFetched = useRef(false);
+  const [isPending, startRefreshTransition] = useTransition();
 
   const [commitView, dispatchCommitView, isCommitLoading] = useActionState(
     async (_prev: CommitViewState, action: SelectedCommit | null): Promise<CommitViewState> => {
@@ -47,23 +46,18 @@ export function useDiff() {
 
   const fetchDiff = useCallback(async () => {
     try {
-      if (hasFetched.current) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
       setError(null);
       startTransition(() => dispatchCommitView(null));
       const result = await api.getAutoDiff();
-      setRawDiff(result.diff);
-      setDiff(result.files ?? parseDiff(result.diff));
-      setBase(result.base);
-      hasFetched.current = true;
+      startRefreshTransition(() => {
+        setRawDiff(result.diff);
+        setDiff(result.files ?? parseDiff(result.diff));
+        setBase(result.base);
+        setLoading(false);
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to fetch diff");
-    } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [dispatchCommitView]);
 
@@ -83,6 +77,18 @@ export function useDiff() {
     fetchDiff();
   }, [fetchDiff]);
 
+  // Listen for diff-updated WebSocket events
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const msg = (e as CustomEvent).detail as { type: string };
+      if (msg.type === "diff-updated") {
+        fetchDiff();
+      }
+    };
+    window.addEventListener("ws-message", handler);
+    return () => window.removeEventListener("ws-message", handler);
+  }, [fetchDiff]);
+
   // When a commit is selected, use commitView state; otherwise auto-diff state
   const isCommitSelected = commitView.commit !== null;
 
@@ -90,7 +96,7 @@ export function useDiff() {
     diff: isCommitSelected ? commitView.diff : diff,
     rawDiff: isCommitSelected ? commitView.rawDiff : rawDiff,
     loading: loading || isCommitLoading,
-    refreshing,
+    refreshing: isPending,
     error: isCommitSelected ? commitView.error : error,
     base,
     selectedCommit: commitView.commit,

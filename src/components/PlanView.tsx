@@ -9,7 +9,7 @@ type Props = {
 };
 
 export function PlanView({ onBack, hasTerminal = false }: Props) {
-  const { files, planPath, loading, error } = usePlanData();
+  const { files, planPath, loading, error, isPending } = usePlanData();
 
   const handleComment = useCallback(
     async (file: string, startLine: number, endLine: number, comment: string) => {
@@ -41,7 +41,12 @@ export function PlanView({ onBack, hasTerminal = false }: Props) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-3 px-4 py-2 bg-[#161b22] border border-[#30363d] rounded-md">
+      <div className="flex items-center gap-3 px-4 py-2 bg-[#161b22] border border-[#30363d] rounded-md relative overflow-hidden">
+        {isPending && (
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1a1e24] overflow-hidden">
+            <div className="h-full bg-[#58a6ff] animate-progress-bar" />
+          </div>
+        )}
         <button className="text-[#58a6ff] hover:text-[#79c0ff] text-sm" onClick={onBack}>
           ← Back
         </button>
