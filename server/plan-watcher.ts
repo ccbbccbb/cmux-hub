@@ -1,5 +1,6 @@
 import { watch as fsWatch, existsSync } from "node:fs";
 import { findPlanFile } from "./plan.ts";
+import { logger } from "./logger.ts";
 
 type BroadcastFn = (message: string) => void;
 
@@ -14,12 +15,17 @@ export function createPlanWatcher(cwd: string, broadcast: BroadcastFn) {
       watcher = null;
     }
     const planPath = await findPlanFile(cwd).catch(() => null);
-    if (!planPath || !existsSync(planPath)) return;
+    if (!planPath || !existsSync(planPath)) {
+      logger.debug("planWatcher: no plan file found for cwd:", cwd);
+      return;
+    }
 
+    logger.debug("planWatcher: watching plan file:", planPath);
     try {
       watcher = fsWatch(planPath, () => {
         if (debounceTimer) clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
+          logger.debug("planWatcher: plan file changed, broadcasting");
           broadcast(JSON.stringify({ type: "plan-updated" }));
         }, 300);
       });
