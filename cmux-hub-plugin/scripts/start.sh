@@ -17,8 +17,15 @@ else
   ACTIONS="$USER_ACTIONS"
 fi
 
-# Start cmux-hub in background so the hook returns immediately
-# Redirect stdout/stderr so the hook runner doesn't wait for EOF
+# Setup logging per project
+LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/cmux-hub"
+mkdir -p "$LOG_DIR"
+PROJECT_NAME="$(basename "$PWD")"
+TIMESTAMP="$(date -u '+%Y%m%dT%H%M%SZ')"
+LOG_FILE="${LOG_DIR}/${PROJECT_NAME}-${TIMESTAMP}.log"
+
+# Start cmux-hub in background with logging
 CMUX_HUB="${HOME}/.local/bin/cmux-hub"
-"$CMUX_HUB" --actions "$ACTIONS" >/dev/null 2>&1 &
+echo "[${TIMESTAMP}] Starting cmux-hub (pwd: $PWD)" >> "$LOG_FILE"
+"$CMUX_HUB" --actions "$ACTIONS" >> "$LOG_FILE" 2>&1 &
 disown
