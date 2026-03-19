@@ -84,6 +84,8 @@ export function createAppConfig(deps: AppDeps) {
 
   // Map<ws, lastPongTimestamp>
   const wsClients = new Map<ServerWebSocket<unknown>, number>();
+  // Track which clients are in foreground (visible tab)
+  const wsVisible = new Map<ServerWebSocket<unknown>, boolean>();
   let planWatcherInstance: ReturnType<typeof createPlanWatcher> | null = null;
   let hasHadClients = false;
   let shutdownTimer: ReturnType<typeof setTimeout> | null = null;
@@ -168,6 +170,34 @@ export function createAppConfig(deps: AppDeps) {
     // Fetch immediately, then poll every 10s
     pollGitHub();
     pollTimer = setInterval(pollGitHub, 10000);
+  }
+
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  /** Returns true if any connected client has a visible (foreground) tab */
+  function hasVisibleClient(): boolean {
+    for (const visible of wsVisible.values()) {
+      if (visible) return true;
+    }
+    return false;
+  }
+
+  /** Start or stop polling based on whether any client is in foreground */
+  function updatePollingState() {
+    if (wsClients.size === 0) {
+      stopPolling();
+      return;
+    }
+    if (hasVisibleClient()) {
+      startPolling();
+    } else {
+      stopPolling();
+    }
   }
 
   function addSecurityHeaders(response: Response, requestOrigin?: string | null): Response {
@@ -766,6 +796,7 @@ export function createAppConfig(deps: AppDeps) {
     websocket: {
       open(ws: ServerWebSocket<unknown>) {
         wsClients.set(ws, Date.now());
+        wsVisible.set(ws, true); // assume foreground on connect
         hasHadClients = true;
         logger.debug("ws open, clients:", wsClients.size);
         if (shutdownTimer) {
@@ -773,11 +804,20 @@ export function createAppConfig(deps: AppDeps) {
           clearTimeout(shutdownTimer);
           shutdownTimer = null;
         }
-        startPolling();
+        updatePollingState();
         startHeartbeat();
       },
-      message(_ws: ServerWebSocket<unknown>, _message: string | Buffer) {
-        // No client→server messages expected yet
+      message(ws: ServerWebSocket<unknown>, message: string | Buffer) {
+        try {
+          const msg = JSON.parse(typeof message === "string" ? message : message.toString());
+          if (msg.type === "visibility" && typeof msg.visible === "boolean") {
+            wsVisible.set(ws, msg.visible);
+            logger.debug("ws visibility:", msg.visible, "foreground clients:", [...wsVisible.values()].filter(Boolean).length);
+            updatePollingState();
+          }
+        } catch {
+          // ignore parse errors
+        }
       },
       pong(ws: ServerWebSocket<unknown>) {
         wsClients.set(ws, Date.now());
@@ -785,12 +825,10 @@ export function createAppConfig(deps: AppDeps) {
       },
       close(ws: ServerWebSocket<unknown>) {
         wsClients.delete(ws);
+        wsVisible.delete(ws);
         logger.debug("ws close, clients:", wsClients.size);
         if (wsClients.size === 0) {
-          if (pollTimer) {
-            clearInterval(pollTimer);
-            pollTimer = null;
-          }
+          stopPolling();
           stopHeartbeat();
           // Auto-shutdown when all clients disconnect
           if (hasHadClients && deps.autoShutdownMs !== undefined) {
@@ -800,6 +838,9 @@ export function createAppConfig(deps: AppDeps) {
               process.exit(0);
             }, deps.autoShutdownMs);
           }
+        } else {
+          // Remaining clients may all be background — update polling
+          updatePollingState();
         }
       },
     },
@@ -875,10 +916,7 @@ export function createAppConfig(deps: AppDeps) {
     pollGitHub,
 
     stop() {
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-      }
+      stopPolling();
       deps.watcher?.stop();
       planWatcherInstance?.stop();
       planWatcherInstance = null;

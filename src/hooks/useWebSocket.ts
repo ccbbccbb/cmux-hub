@@ -54,7 +54,18 @@ export function useWebSocket(onMessage: (msg: WSMessage) => void) {
   useEffect(() => {
     closedIntentionallyRef.current = false;
     connect();
+
+    // Notify server of foreground/background state for polling control
+    const handleVisibility = () => {
+      const ws = wsRef.current;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "visibility", visible: !document.hidden }));
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
       closedIntentionallyRef.current = true;
       wsRef.current?.close();
     };
