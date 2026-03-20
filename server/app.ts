@@ -1,4 +1,5 @@
 import type { ServerWebSocket } from "bun";
+import path from "node:path";
 import type { GitService } from "./git.ts";
 import type { CmuxService } from "./cmux.ts";
 import type { GitHubService } from "./github.ts";
@@ -27,8 +28,10 @@ type AppDeps = {
   cwd: string;
   defaultSurfaceId?: string;
   browserSurfaceId?: string;
-  /** When true, return undefined from fetch for unmatched routes (needed for Bun dev server asset serving) */
+  /** When true, serve dev-built frontend assets from devDistDir */
   development?: boolean;
+  /** Directory containing dev-built frontend assets (used when development=true) */
+  devDistDir?: string;
   /** Shutdown the process when all WebSocket clients disconnect */
   autoShutdownMs?: number;
   /** Menu actions for the toolbar */
@@ -875,9 +878,12 @@ export function createAppConfig(deps: AppDeps) {
         return new Response(null, { status: 204 });
       }
 
-      // In dev mode, return undefined so Bun's dev server can serve compiled assets.
-      // In production/compiled mode, assets are embedded in routes, so return 404.
-      if (deps.development) return undefined;
+      // Dev mode: serve built frontend files from devDistDir
+      if (deps.development && deps.devDistDir) {
+        const filePath = path.join(deps.devDistDir, url.pathname === "/" ? "index.html" : url.pathname.slice(1));
+        return new Response(Bun.file(filePath));
+      }
+
       return new Response("Not Found", { status: 404 });
     },
 
@@ -903,6 +909,12 @@ export function createAppConfig(deps: AppDeps) {
       };
       planWatcherInstance = createPlanWatcher(cwd, broadcast);
       planWatcherInstance.start();
+    },
+
+    broadcast(message: string) {
+      for (const ws of wsClients.keys()) {
+        ws.send(message);
+      }
     },
 
     broadcastLauncherUpdate(states: ServerState[]) {

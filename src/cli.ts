@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { serve } from "bun";
 import { parseArgs } from "node:util";
+import path from "node:path";
 import index from "./index.html";
 import { createGitService, defaultCommandRunner } from "../server/git.ts";
 import { createCmuxService, createSocketConnector, createDryRunConnector } from "../server/cmux.ts";
@@ -180,12 +181,21 @@ const git = createGitService(defaultCommandRunner, CWD);
 const connector = DRY_RUN ? createDryRunConnector() : createSocketConnector();
 const cmux = createCmuxService(connector);
 const github = createGitHubService(defaultCommandRunner, CWD);
+
+// globalThis cache for bun --hot state persistence
+const g = globalThis as Record<string, unknown>;
+
+// Stop old watcher before creating new one (bun --hot cleanup)
+if (g.__cmuxHubWatcher) {
+  (g.__cmuxHubWatcher as ReturnType<typeof createFileWatcher>).stop();
+  logger.debug("stopped previous watcher for hot reload");
+}
 const watcher = createFileWatcher(defaultWatcherFactory, CWD);
+g.__cmuxHubWatcher = watcher;
 
 // Load launch.json if present.
 // Use globalThis cache for bun --hot; launcher implements AsyncDisposable
 // so cleanup() is called via Symbol.asyncDispose on normal exit.
-const g = globalThis as Record<string, unknown>;
 let launcher: Launcher | undefined;
 if (g.__cmuxHubLauncher) {
   launcher = g.__cmuxHubLauncher as Launcher;
@@ -240,6 +250,10 @@ async function browserEval(surfaceRef: string, script: string): Promise<string |
   }
 }
 
+// Detect dev mode: compiled binary sets Bun.main differently
+const isDev = !process.execPath.includes("cmux-hub");
+const devOutDir = path.join(import.meta.dir, "..", ".dev-dist");
+
 const appDeps: Parameters<typeof createAppConfig>[0] = {
   port: PORT,
   git,
@@ -254,8 +268,16 @@ const appDeps: Parameters<typeof createAppConfig>[0] = {
   launcher,
   openPreviewSplit,
   browserEval,
+  development: isDev,
+  devDistDir: isDev ? devOutDir : undefined,
 };
+// Stop old app's timers/watchers before creating new one (bun --hot cleanup)
+if (g.__cmuxHubApp) {
+  (g.__cmuxHubApp as ReturnType<typeof createAppConfig>).stop();
+  logger.debug("stopped previous app for hot reload");
+}
 const app = createAppConfig(appDeps);
+g.__cmuxHubApp = app;
 
 // Wire up launcher onChange to broadcast via WebSocket
 if (launcher) {
@@ -264,26 +286,62 @@ if (launcher) {
   });
 }
 
-// Detect dev mode: compiled binary sets Bun.main differently
-const isDev = !process.execPath.includes("cmux-hub");
+// Dev mode: build frontend with Bun.build() instead of relying on Bun's HTML bundler cache
+
+async function devBuild(): Promise<boolean> {
+  const plugin = (await import("bun-plugin-tailwind")).default;
+  const result = await Bun.build({
+    entrypoints: [path.join(import.meta.dir, "index.html")],
+    outdir: devOutDir,
+    plugins: [plugin],
+    target: "browser",
+    sourcemap: "linked",
+  });
+  if (!result.success) {
+    logger.info("Dev build failed:", result.logs);
+  }
+  return result.success;
+}
+
+if (isDev) {
+  await devBuild();
+  logger.info("Dev build complete");
+}
+
+// In production, Bun's HTML import serves "/"; in dev, app.fetch serves from devDistDir
+const routes = isDev
+  ? app.apiRoutes
+  : { ...app.apiRoutes, "/": index };
 
 const server = serve({
   port: PORT,
   hostname: "127.0.0.1",
-  routes: {
-    ...app.apiRoutes,
-    "/": index,
-  },
+  routes: routes as Parameters<typeof serve>[0]["routes"],
   websocket: app.websocket,
   fetch: app.fetch,
-  development: isDev && {
-    hmr: true,
-    console: true,
-  },
 });
 
 app.setServer(server);
 app.startWatcher();
+
+// Dev mode: watch src/ files and rebuild frontend on changes
+if (isDev) {
+  const { watch } = await import("node:fs");
+  let devBuildTimer: ReturnType<typeof setTimeout> | null = null;
+  const srcDir = path.join(import.meta.dir);
+  watch(srcDir, { recursive: true }, (_event, filename) => {
+    if (!filename || filename.startsWith(".dev-dist")) return;
+    if (devBuildTimer) clearTimeout(devBuildTimer);
+    devBuildTimer = setTimeout(async () => {
+      logger.debug("dev: rebuilding frontend...");
+      const ok = await devBuild();
+      if (ok) {
+        logger.debug("dev: rebuild complete, sending reload");
+        app.broadcast(JSON.stringify({ type: "dev-reload" }));
+      }
+    }, 300);
+  });
+}
 
 // Cleanup on termination signals (e.g. SIGHUP from parent shell exit)
 async function cleanup() {
@@ -294,6 +352,14 @@ async function cleanup() {
   server.stop();
   process.exit(0);
 }
+// Remove old signal handlers before adding new ones (bun --hot cleanup)
+if (g.__cmuxHubCleanup) {
+  const old = g.__cmuxHubCleanup as () => Promise<void>;
+  process.off("SIGHUP", old);
+  process.off("SIGINT", old);
+  process.off("SIGTERM", old);
+}
+g.__cmuxHubCleanup = cleanup;
 process.on("SIGHUP", cleanup);
 process.on("SIGINT", cleanup);
 process.on("SIGTERM", cleanup);

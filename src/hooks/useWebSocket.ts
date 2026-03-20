@@ -14,7 +14,6 @@ export function useWebSocket(onMessage: (msg: WSMessage) => void) {
   const [connected, setConnected] = useState(false);
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;
-
   const connect = useCallback(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
@@ -27,6 +26,11 @@ export function useWebSocket(onMessage: (msg: WSMessage) => void) {
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data as string) as WSMessage;
+        // Dev mode: reload page when server rebuilds frontend
+        if (msg.type === "dev-reload") {
+          window.location.reload();
+          return;
+        }
         onMessageRef.current(msg);
         // Dispatch as custom event so other hooks can subscribe
         window.dispatchEvent(new CustomEvent("ws-message", { detail: msg }));
