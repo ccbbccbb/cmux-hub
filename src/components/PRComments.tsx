@@ -22,7 +22,7 @@ export function InlinePRComment({ comment, filePath }: Props) {
   const handleSend = useCallback(async () => {
     setSending(true);
     try {
-      const text = `${filePath}:${comment.line}\n${comment.body}`;
+      const text = `${filePath}:${comment.line} ${comment.body}`;
       await api.sendToTerminal(text);
     } catch (e) {
       console.error("Failed to send comment to terminal:", e);

@@ -4,6 +4,8 @@ import type { SelectedCommit } from "../hooks/useDiff.ts";
 import { DiffFile } from "./DiffFile.tsx";
 import { CommitList } from "./CommitList.tsx";
 import { api } from "../lib/api.ts";
+import { useReviewQueue } from "../hooks/useReviewQueue.tsx";
+import type { CommentMode } from "./CommentForm.tsx";
 
 type PRComment = {
   id: number;
@@ -43,15 +45,21 @@ export function DiffView({
   onSelectCommit,
   onClearCommit,
 }: Props) {
+  const { addToReview, pending } = useReviewQueue();
+
   const handleComment = useCallback(
-    async (file: string, startLine: number, endLine: number, comment: string) => {
-      try {
-        await api.sendComment(file, startLine, endLine, comment);
-      } catch (e) {
-        console.error("Failed to send comment:", e);
+    async (file: string, startLine: number, endLine: number, comment: string, mode: CommentMode) => {
+      if (mode === "review") {
+        addToReview({ file, startLine, endLine, comment });
+      } else {
+        try {
+          await api.sendComment(file, startLine, endLine, comment);
+        } catch (e) {
+          console.error("Failed to send comment:", e);
+        }
       }
     },
-    [],
+    [addToReview],
   );
 
   if (loading && diff.length === 0) {
@@ -117,6 +125,7 @@ export function DiffView({
           file={file}
           onComment={hasTerminal ? handleComment : undefined}
           prComments={prComments.filter((c) => c.path === file.newPath)}
+          pendingComments={pending.filter((c) => c.file === file.newPath)}
         />
       ))}
     </div>

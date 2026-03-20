@@ -10,6 +10,7 @@ import { useHashRoute } from "./hooks/useHashRoute.ts";
 import { useStatus } from "./hooks/useStatus.ts";
 import { usePRData } from "./hooks/usePRData.ts";
 import { useLauncher } from "./hooks/useLauncher.ts";
+import { ReviewQueueProvider } from "./hooks/useReviewQueue.tsx";
 import "./index.css";
 
 export const ScrollContainerContext = React.createContext<React.RefObject<HTMLDivElement | null>>({
@@ -38,8 +39,9 @@ export default function App() {
   useWebSocket(() => {});
 
   return (
+    <ReviewQueueProvider>
     <ScrollContainerContext.Provider value={scrollContainerRef}>
-    <div className="min-h-screen max-w-full overflow-x-hidden bg-[#0d1117] text-[#c9d1d9] flex flex-col">
+    <div className="h-screen max-w-full overflow-hidden bg-[#0d1117] text-[#c9d1d9] flex flex-col">
       {refreshing && (
         <div className="fixed top-0 left-0 right-0 z-50 h-0.5 bg-[#1a1e24] overflow-hidden">
           <div className="h-full bg-[#58a6ff] animate-progress-bar" />
@@ -94,5 +96,6 @@ export default function App() {
       </div>
     </div>
     </ScrollContainerContext.Provider>
+    </ReviewQueueProvider>
   );
 }

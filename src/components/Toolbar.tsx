@@ -4,6 +4,7 @@ import { Input } from "./ui/input.tsx";
 import { api } from "../lib/api.ts";
 import type { MenuItem, ActionItem } from "../../server/actions.ts";
 import { isSubmenu, isActionWithInput } from "../../server/actions.ts";
+import { useReviewQueue } from "../hooks/useReviewQueue.tsx";
 
 type Props = {
   branch: string;
@@ -162,9 +163,10 @@ export function Toolbar({
 }: Props) {
   const [sending, setSending] = useState(false);
   const [activeInput, setActiveInput] = useState<string | null>(null);
+  const { pending, submitReview, submitting: submittingReview, clearQueue } = useReviewQueue();
 
   return (
-    <div data-testid="toolbar" className="border-b border-[#30363d] bg-[#161b22] px-4 py-2">
+    <div data-testid="toolbar" className="border-b border-[#30363d] bg-[#161b22] px-4 py-2 flex-shrink-0 z-20">
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex items-center gap-1">
           <button
@@ -197,6 +199,26 @@ export function Toolbar({
           )}
         </div>
         <div className="flex-1" />
+        {hasTerminal && pending.length > 0 && (
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              disabled={submittingReview}
+              onClick={submitReview}
+              className="bg-[#d29922] hover:bg-[#bb8a1e] text-black"
+            >
+              {submittingReview ? "Sending..." : `Finish review (${pending.length})`}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearQueue}
+              title="Discard all pending comments"
+            >
+              Discard
+            </Button>
+          </div>
+        )}
         {hasTerminal &&
           actions.map((item, i) => {
             const id = String(i);

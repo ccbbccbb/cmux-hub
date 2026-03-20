@@ -3,9 +3,13 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import type { DiffFile as DiffFileType, DiffLine as DiffLineType } from "../lib/diff-parser.ts";
 import { DiffLine } from "./DiffLine.tsx";
 import { CommentForm } from "./CommentForm.tsx";
+import type { CommentMode } from "./CommentForm.tsx";
 import { InlinePRComment } from "./PRComments.tsx";
+import { PendingComment } from "./PendingComment.tsx";
 import { api } from "../lib/api.ts";
 import { ScrollContainerContext } from "../App.tsx";
+import { useReviewQueue } from "../hooks/useReviewQueue.tsx";
+import type { PendingComment as PendingCommentData } from "../hooks/useReviewQueue.tsx";
 
 type PRCommentData = {
   id: number;
@@ -47,19 +51,32 @@ type FlatCommentForm = {
   type: "comment-form";
 };
 
+type FlatPendingComment = {
+  type: "pending-comment";
+  pendingComment: PendingCommentData;
+};
+
+type FlatCopyTooltip = {
+  type: "copy-tooltip";
+  file: string;
+  startLine: number;
+  endLine: number;
+};
+
 type FlatItem = FlatLine | FlatHunkHeader | FlatExpandButton;
-type RenderItem = FlatItem | FlatPRComment | FlatCommentForm;
+type RenderItem = FlatItem | FlatPRComment | FlatCommentForm | FlatPendingComment | FlatCopyTooltip;
 
 type Props = {
   file: DiffFileType;
-  onComment?: (file: string, startLine: number, endLine: number, comment: string) => void;
+  onComment?: (file: string, startLine: number, endLine: number, comment: string, mode: CommentMode) => void;
   prComments?: PRCommentData[];
+  pendingComments?: PendingCommentData[];
 };
 
 const EXPAND_LINES = 20;
-const VIRTUALIZE_THRESHOLD = 100;
+const VIRTUALIZE_THRESHOLD = 10000;
 
-export function DiffFile({ file, onComment, prComments = [] }: Props) {
+export function DiffFile({ file, onComment, prComments = [], pendingComments = [] }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [selStart, setSelStart] = useState<number | null>(null);
   const [selEnd, setSelEnd] = useState<number | null>(null);
@@ -68,7 +85,9 @@ export function DiffFile({ file, onComment, prComments = [] }: Props) {
   const [showFileComment, setShowFileComment] = useState(false);
   const [expandedLines, setExpandedLines] = useState<Map<string, DiffLineType[]>>(new Map());
   const [loadingExpand, setLoadingExpand] = useState<string | null>(null);
+  const [copiedRef, setCopiedRef] = useState(false);
   const scrollContainerRef = useContext(ScrollContainerContext);
+  const { updatePending, removePending, pending: allPending } = useReviewQueue();
 
   // Review mode: no diff coloring for new files or files with only additions
   const isReviewMode = useMemo(() => {
@@ -172,10 +191,43 @@ export function DiffFile({ file, onComment, prComments = [] }: Props) {
     return map;
   }, [prComments]);
 
+  // Group pending comments by endLine
+  const pendingByLine = useMemo(() => {
+    const map = new Map<number, PendingCommentData[]>();
+    for (const c of pendingComments) {
+      const ln = c.endLine;
+      const existing = map.get(ln);
+      if (existing) {
+        existing.push(c);
+      } else {
+        map.set(ln, [c]);
+      }
+    }
+    return map;
+  }, [pendingComments]);
+
   const selMin = selStart !== null && selEnd !== null ? Math.min(selStart, selEnd) : null;
   const selMax = selStart !== null && selEnd !== null ? Math.max(selStart, selEnd) : null;
 
-  // Flatten items with PR comments and comment form interleaved for rendering
+  const selectedLineRange = useMemo((): [number, number] | null => {
+    if (selMin === null || selMax === null) return null;
+    let startLine: number | null = null;
+    let endLine: number | null = null;
+    for (const item of flatItems) {
+      if (item.type !== "line") continue;
+      if (item.index >= selMin && item.index <= selMax) {
+        const ln = item.line.newLineNumber ?? item.line.oldLineNumber;
+        if (ln !== null) {
+          if (startLine === null) startLine = ln;
+          endLine = ln;
+        }
+      }
+    }
+    if (startLine !== null && endLine !== null) return [startLine, endLine];
+    return null;
+  }, [flatItems, selMin, selMax]);
+
+  // Flatten items with PR comments, pending comments, and comment form interleaved for rendering
   const renderItems = useMemo(() => {
     const items: RenderItem[] = [];
     for (const item of flatItems) {
@@ -188,13 +240,22 @@ export function DiffFile({ file, onComment, prComments = [] }: Props) {
             items.push({ type: "pr-comment", comment: c });
           }
         }
+        const linePending = lineNum !== null ? pendingByLine.get(lineNum) : undefined;
+        if (linePending) {
+          for (const p of linePending) {
+            items.push({ type: "pending-comment", pendingComment: p });
+          }
+        }
         if (showComment && selMax !== null && item.index === selMax) {
+          if (selectedLineRange) {
+            items.push({ type: "copy-tooltip", file: file.newPath, startLine: selectedLineRange[0], endLine: selectedLineRange[1] });
+          }
           items.push({ type: "comment-form" });
         }
       }
     }
     return items;
-  }, [flatItems, commentsByLine, showComment, selMax]);
+  }, [flatItems, commentsByLine, pendingByLine, showComment, selMax, selectedLineRange, file.newPath]);
 
   const shouldVirtualize = renderItems.length > VIRTUALIZE_THRESHOLD;
 
@@ -205,7 +266,8 @@ export function DiffFile({ file, onComment, prComments = [] }: Props) {
       const item = renderItems[index];
       if (!item) return 24;
       if (item.type === "hunk-header" || item.type === "expand") return 28;
-      if (item.type === "pr-comment") return 60;
+      if (item.type === "pr-comment" || item.type === "pending-comment") return 60;
+      if (item.type === "copy-tooltip") return 32;
       if (item.type === "comment-form") return 120;
       return 24;
     },
@@ -248,39 +310,21 @@ export function DiffFile({ file, onComment, prComments = [] }: Props) {
     setShowComment(false);
   }, []);
 
-  const resolveLineRange = useCallback((): [number, number] | null => {
-    if (selMin === null || selMax === null) return null;
-    let startLine: number | null = null;
-    let endLine: number | null = null;
-    for (const item of flatItems) {
-      if (item.type !== "line") continue;
-      if (item.index >= selMin && item.index <= selMax) {
-        const ln = item.line.newLineNumber ?? item.line.oldLineNumber;
-        if (ln !== null) {
-          if (startLine === null) startLine = ln;
-          endLine = ln;
-        }
-      }
-    }
-    if (startLine !== null && endLine !== null) return [startLine, endLine];
-    return null;
-  }, [flatItems, selMin, selMax]);
 
   const handleSubmitComment = useCallback(
-    (comment: string) => {
-      const range = resolveLineRange();
-      if (onComment && range) {
-        onComment(file.newPath, range[0], range[1], comment);
+    (comment: string, mode: CommentMode) => {
+      if (onComment && selectedLineRange) {
+        onComment(file.newPath, selectedLineRange[0], selectedLineRange[1], comment, mode);
       }
       handleCancelComment();
     },
-    [onComment, file.newPath, resolveLineRange, handleCancelComment],
+    [onComment, file.newPath, selectedLineRange, handleCancelComment],
   );
 
   const handleSubmitFileComment = useCallback(
-    (comment: string) => {
+    (comment: string, mode: CommentMode) => {
       if (onComment) {
-        onComment(file.newPath, 0, 0, comment);
+        onComment(file.newPath, 0, 0, comment, mode);
       }
       setShowFileComment(false);
     },
@@ -370,11 +414,49 @@ export function DiffFile({ file, onComment, prComments = [] }: Props) {
         );
       }
 
+      if (item.type === "pending-comment") {
+        return (
+          <tr>
+            <td colSpan={4} className="px-4 py-1 bg-[#1c2128] border-l-2 border-[#d29922]">
+              <PendingComment
+                comment={item.pendingComment.comment}
+                onUpdate={(text) => updatePending(item.pendingComment.id, text)}
+                onDelete={() => removePending(item.pendingComment.id)}
+              />
+            </td>
+          </tr>
+        );
+      }
+
+      if (item.type === "copy-tooltip") {
+        const range = item.startLine === item.endLine ? `${item.startLine}` : `${item.startLine}-${item.endLine}`;
+        const ref = `${item.file}:${range}`;
+        return (
+          <tr>
+            <td colSpan={4} className="px-4 py-1">
+              <button
+                className="text-xs text-[#848d97] hover:text-[#adbac7] border border-[#30363d] rounded px-2 py-0.5 hover:border-[#848d97]"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(ref);
+                  setCopiedRef(true);
+                  setTimeout(() => setCopiedRef(false), 1500);
+                }}
+              >
+                {copiedRef ? "Copied!" : ref}
+              </button>
+            </td>
+          </tr>
+        );
+      }
+
       if (item.type === "comment-form") {
         return (
           <tr>
             <td colSpan={4} className="p-2 bg-gray-900">
-              <CommentForm onSubmit={handleSubmitComment} onCancel={handleCancelComment} />
+              <CommentForm
+                onSubmit={handleSubmitComment}
+                onCancel={handleCancelComment}
+              />
             </td>
           </tr>
         );
@@ -409,6 +491,10 @@ export function DiffFile({ file, onComment, prComments = [] }: Props) {
       handleMouseEnter,
       handleSubmitComment,
       handleCancelComment,
+      updatePending,
+      removePending,
+      copiedRef,
+      allPending.length,
     ],
   );
 
@@ -420,6 +506,10 @@ export function DiffFile({ file, onComment, prComments = [] }: Props) {
         return `expand-${item.direction}-${item.hunkIndex}`;
       case "pr-comment":
         return `pr-comment-${item.comment.id}`;
+      case "pending-comment":
+        return `pending-${item.pendingComment.id}`;
+      case "copy-tooltip":
+        return `copy-tooltip`;
       case "comment-form":
         return `comment-form`;
       case "line":

@@ -53,7 +53,9 @@ describe("createCmuxService", () => {
     const cmux = createCmuxService(connector, "/tmp/test.sock");
     await cmux.sendComment("src/index.ts", 42, 42, "Fix this bug");
     expect(sent[0]?.method).toBe("surface.send_text");
-    expect(sent[0]?.params.text).toBe("src/index.ts:42\nFix this bug\n");
+    expect(sent[0]?.params.text).toBe("src/index.ts:42 Fix this bug");
+    expect(sent[1]?.method).toBe("surface.send_key");
+    expect(sent[1]?.params.key).toBe("Enter");
   });
 
   test("sendCommand appends newline", async () => {

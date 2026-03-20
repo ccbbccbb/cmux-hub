@@ -125,6 +125,16 @@ export function createCmuxService(connector: SocketConnector, socketPath?: strin
       });
     },
 
+    async sendKey(key: string, surfaceId?: string): Promise<void> {
+      await withConnection(async (conn) => {
+        const params: Record<string, unknown> = { key };
+        if (surfaceId) {
+          params.surface_id = surfaceId;
+        }
+        await conn.send("surface.send_key", params);
+      });
+    },
+
     async listSurfaces(): Promise<unknown> {
       return withConnection(async (conn) => {
         return conn.send("surface.list");
@@ -156,8 +166,11 @@ export function createCmuxService(connector: SocketConnector, socketPath?: strin
       surfaceId?: string,
     ): Promise<void> {
       const range = startLine === endLine ? `${startLine}` : `${startLine}-${endLine}`;
-      const text = `${file}:${range}\n${comment}\n`;
+      const text = `${file}:${range} ${comment}`;
       await this.sendText(text, surfaceId);
+      // Use send_key for Enter to ensure submission — send_text with \n
+      // may not trigger submit in some inputs (e.g. Claude Code)
+      await this.sendKey("Enter", surfaceId);
     },
 
     /**
