@@ -1,5 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo, useContext } from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import type { DiffFile as DiffFileType, DiffLine as DiffLineType } from "../lib/diff-parser.ts";
 import { DiffLine } from "./DiffLine.tsx";
 import { CommentForm } from "./CommentForm.tsx";
@@ -7,7 +6,6 @@ import type { CommentMode } from "./CommentForm.tsx";
 import { InlinePRComment } from "./PRComments.tsx";
 import { PendingComment } from "./PendingComment.tsx";
 import { api } from "../lib/api.ts";
-import { ScrollContainerContext } from "../App.tsx";
 import { useReviewQueue } from "../hooks/useReviewQueue.tsx";
 import type { PendingComment as PendingCommentData } from "../hooks/useReviewQueue.tsx";
 
@@ -74,7 +72,6 @@ type Props = {
 };
 
 const EXPAND_LINES = 20;
-const VIRTUALIZE_THRESHOLD = 10000;
 
 export function DiffFile({ file, onComment, prComments = [], pendingComments = [] }: Props) {
   const [collapsed, setCollapsed] = useState(false);
@@ -86,7 +83,6 @@ export function DiffFile({ file, onComment, prComments = [], pendingComments = [
   const [expandedLines, setExpandedLines] = useState<Map<string, DiffLineType[]>>(new Map());
   const [loadingExpand, setLoadingExpand] = useState<string | null>(null);
   const [copiedRef, setCopiedRef] = useState(false);
-  const scrollContainerRef = useContext(ScrollContainerContext);
   const { updatePending, removePending, pending: allPending } = useReviewQueue();
 
   // Review mode: no diff coloring for new files or files with only additions
@@ -257,22 +253,6 @@ export function DiffFile({ file, onComment, prComments = [], pendingComments = [
     return items;
   }, [flatItems, commentsByLine, pendingByLine, showComment, selMax, selectedLineRange, file.newPath]);
 
-  const shouldVirtualize = renderItems.length > VIRTUALIZE_THRESHOLD;
-
-  const virtualizer = useVirtualizer({
-    count: shouldVirtualize && !collapsed ? renderItems.length : 0,
-    getScrollElement: () => scrollContainerRef.current,
-    estimateSize: (index) => {
-      const item = renderItems[index];
-      if (!item) return 24;
-      if (item.type === "hunk-header" || item.type === "expand") return 28;
-      if (item.type === "pr-comment" || item.type === "pending-comment") return 60;
-      if (item.type === "copy-tooltip") return 32;
-      if (item.type === "comment-form") return 120;
-      return 24;
-    },
-    overscan: 50,
-  });
 
   const handleMouseDown = useCallback(
     (index: number) => {
@@ -527,8 +507,6 @@ export function DiffFile({ file, onComment, prComments = [], pendingComments = [
       ? "bg-[#da3633] text-white"
       : "bg-[#9e6a03] text-white";
 
-  const virtualItems = virtualizer.getVirtualItems();
-
   return (
     <div
       data-testid="diff-file"
@@ -569,47 +547,17 @@ export function DiffFile({ file, onComment, prComments = [], pendingComments = [
         </div>
       )}
       {!collapsed && (
-        <>
-          {shouldVirtualize ? (
-            <div
-              style={{ height: virtualizer.getTotalSize(), position: "relative" }}
-              className={file.isNew ? "bg-[#12261e]" : ""}
-            >
-              {virtualItems.map((virtualRow) => {
-                const item = renderItems[virtualRow.index];
-                if (!item) return null;
-                return (
-                  <div
-                    key={renderItemKey(item, virtualRow.index)}
-                    data-index={virtualRow.index}
-                    ref={virtualizer.measureElement}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                  >
-                    <table className="w-full border-collapse">
-                      <tbody>{renderRow(item)}</tbody>
-                    </table>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <table className={`w-full border-collapse ${file.isNew ? "bg-[#12261e]" : ""}`}>
-              <tbody>
-                {renderItems.map((item, i) => (
-                  <React.Fragment key={renderItemKey(item, i)}>
-                    {renderRow(item)}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </>
+        <div style={{ contentVisibility: "auto", containIntrinsicSize: "auto 500px" } as React.CSSProperties}>
+          <table className={`w-full border-collapse ${file.isNew ? "bg-[#12261e]" : ""}`}>
+            <tbody>
+              {renderItems.map((item, i) => (
+                <React.Fragment key={renderItemKey(item, i)}>
+                  {renderRow(item)}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
