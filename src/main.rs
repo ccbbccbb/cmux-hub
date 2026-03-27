@@ -1,10 +1,7 @@
-mod actions;
-mod git;
-mod server;
-
 use std::{path::PathBuf, sync::Arc};
 
 use clap::Parser;
+use cmux_hub::{actions, server};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Parser, Debug)]
@@ -41,6 +38,6 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let actions = actions::load_actions(cli.actions.as_deref()).await?;
-    let state = Arc::new(server::AppState::new(cli.repo_path, actions));
+    let state = Arc::new(server::AppState::new(cli.repo_path, actions).await?);
     server::serve(state, cli.port).await
 }
