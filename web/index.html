@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cmux-hub (Rust)</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <div>
+        <h1>cmux-hub</h1>
+        <p id="branch">Branch: -</p>
+      </div>
+      <div class="toolbar-actions" id="actions"></div>
+    </header>
+
+    <main class="layout">
+      <section>
+        <h2>Diff</h2>
+        <pre id="diff" class="panel"></pre>
+      </section>
+      <section>
+        <h2>Recent commits</h2>
+        <ul id="commits" class="panel commits"></ul>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

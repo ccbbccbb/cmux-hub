@@ -9,25 +9,23 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  rust:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@ecf28ddc73e819eb6fa29df6b34ef8921c743461 # v2.1.3
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-      - name: Lint
-        run: bun run lint
-      - name: Typecheck
-        run: bun run typecheck
-      - name: Unit tests
-        run: bun test src server
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Format
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Tests
+        run: cargo test
 
-  e2e:
+  web:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -38,7 +36,7 @@ jobs:
         uses: oven-sh/setup-bun@ecf28ddc73e819eb6fa29df6b34ef8921c743461 # v2.1.3
       - name: Install dependencies
         run: bun install --frozen-lockfile
-      - name: Install Playwright
-        run: bunx playwright install --with-deps chromium
-      - name: E2E tests
-        run: bun run test:e2e
+      - name: Lint web
+        run: bun run lint:web
+      - name: Typecheck web
+        run: bun run typecheck:web

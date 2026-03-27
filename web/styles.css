@@ -1,0 +1,88 @@
+:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+body {
+  margin: 0;
+  background: #0b1220;
+  color: #e2e8f0;
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #1e293b;
+}
+.toolbar h1 {
+  margin: 0;
+  font-size: 20px;
+}
+.toolbar p {
+  margin: 4px 0 0;
+  color: #94a3b8;
+}
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.toolbar-actions button {
+  background: #1d4ed8;
+  border: 0;
+  color: white;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  padding: 16px;
+}
+.panel {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 12px;
+  min-height: 520px;
+  overflow: auto;
+}
+#diff {
+  margin: 0;
+  white-space: pre;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.commits {
+  list-style: none;
+  margin: 0;
+  padding: 10px;
+  min-height: 520px;
+}
+.commits li {
+  padding: 8px 4px;
+  border-bottom: 1px solid #1e293b;
+}
+.commits code {
+  color: #a5b4fc;
+}
+.add {
+  color: #22c55e;
+}
+.del {
+  color: #ef4444;
+}
+.meta {
+  color: #93c5fd;
+}
+@media (max-width: 1000px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

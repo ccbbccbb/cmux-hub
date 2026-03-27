@@ -40,3 +40,7 @@ test-results
 
 # compiled binary
 /cmux-hub
+
+# rust
+/target
+Cargo.lock
