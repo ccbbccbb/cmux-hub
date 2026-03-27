@@ -33,9 +33,9 @@ cargo run -- --port 4567 --actions .claude/cmux-hub.json .
 ## Web quality checks
 
 ```bash
-npm install
-npm run lint:web
-npm run typecheck:web
+bun install
+bun run lint:web
+bun run typecheck:web
 ```
 
 ## Notes
